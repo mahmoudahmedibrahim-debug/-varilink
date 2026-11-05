@@ -33,23 +33,31 @@
     return { rate: num(line.rate), basis: 'Manual rate', direct: null };
   }
 
-  function computeLine(line, pkg) {
+  function typeTotal(line, change) {
+    return (change && change.types || []).reduce((s, t) => s + num(t.count) * num((line.perType || {})[t.name]), 0);
+  }
+
+  function computeLine(line, pkg, change) {
     const basis = measurementBasis((pkg.contract || {}).type);
     const boq = line.boqCode ? findBoq(pkg, line.boqCode) : null;
     const flags = [];
     let qty = 0, qtyBasis = '', rateInfo;
+    const hasTypes = line.perType && change && (change.types || []).length;
+    const takeoff = hasTypes ? round2(typeTotal(line, change) * 1000) / 1000 : num(line.takeoffQty);
+    const tBasis = hasTypes ? 'Quantity per type x number of each type' : null;
 
     if (line.action === 'Omission') {
-      if (!boq) flags.push({ level: 'error', text: 'Omission needs a BOQ item.' });
+      if (!boq && !num(line.rate)) flags.push({ level: 'error', text: 'Omission needs a BOQ item.' });
+      if (!boq && num(line.rate)) flags.push({ level: 'warn', text: 'Not linked to a BOQ item yet.' });
       if (line.scope === 'full') {
         qty = boq ? num(boq.qty) : 0;
         qtyBasis = 'BOQ quantity: full item omitted';
       } else {
-        qty = num(line.takeoffQty);
-        qtyBasis = 'Actual take-off: part of item omitted';
+        qty = takeoff;
+        qtyBasis = tBasis || 'Actual take-off: part of item omitted';
         if (boq && qty > num(boq.qty)) flags.push({ level: 'warn', text: `Omitted take-off ${qty} exceeds BOQ quantity ${num(boq.qty)}.` });
       }
-      rateInfo = boq ? { rate: num(boq.rate), basis: `BOQ rate ${boq.code}`, direct: null } : { rate: 0, basis: '', direct: null };
+      rateInfo = boq ? { rate: num(boq.rate), basis: `BOQ rate ${boq.code}`, direct: null } : { rate: num(line.rate), basis: line.rateNote || 'Rate from the form', direct: null };
     } else {
       const replaced = line.replacesCode ? findBoq(pkg, line.replacesCode) : null;
       if (basis === 'lumpsum' && replaced) {
@@ -57,8 +65,8 @@
         qtyBasis = `BOQ quantity of ${replaced.code}: lump sum full replacement`;
         if (line.unit && replaced.unit && line.unit !== replaced.unit) flags.push({ level: 'warn', text: `Unit ${line.unit} differs from replaced item unit ${replaced.unit}; the fixed quantity needs review.` });
       } else {
-        qty = num(line.takeoffQty);
-        qtyBasis = 'Actual take-off from revised drawings';
+        qty = takeoff;
+        qtyBasis = tBasis || 'Actual take-off from revised drawings';
       }
       rateInfo = rateFor(line, pkg);
       if (!rateInfo.rate) flags.push({ level: 'error', text: 'Rate is missing.' });
@@ -70,13 +78,13 @@
 
     const sign = line.action === 'Omission' ? -1 : 1;
     const rate = rateInfo.rate;
-    const amount = round2(sign * qty * rate);
+    const amount = round2(sign * qty * rate), raw = sign * qty * rate;
     const contractorAmount = line.contractorQty === '' || line.contractorQty == null || line.contractorRate === '' || line.contractorRate == null ? null : round2(sign * num(line.contractorQty) * num(line.contractorRate));
-    return { ...line, desc: line.desc || (boq ? boq.desc : ''), unit: line.unit || (boq ? boq.unit : ''), discipline: line.discipline || (boq ? boq.discipline : '') || 'General', qty, qtyBasis, rate, rateBasis: rateInfo.basis, direct: rateInfo.direct, sign, amount, contractorAmount, flags };
+    return { ...line, desc: line.desc || (boq ? boq.desc : ''), unit: line.unit || (boq ? boq.unit : ''), discipline: line.discipline || (boq ? boq.discipline : '') || 'General', qty, qtyBasis, rate, rateBasis: rateInfo.basis, direct: rateInfo.direct, sign, amount, raw, contractorAmount, flags };
   }
 
   function computeChange(change, pkg) {
-    const lines = (change.lines || []).map(l => computeLine(l, pkg));
+    const lines = (change.lines || []).map(l => computeLine(l, pkg, change));
     const abortive = [];
     if (change.abortive && change.abortive.status === 'Yes') {
       lines.filter(l => l.action === 'Omission' && num(l.executedQty) > 0).forEach(l => {
@@ -85,14 +93,16 @@
       });
     }
     const all = lines.concat(abortive);
-    const sum = f => round2(all.filter(f).reduce((s, l) => s + l.amount, 0));
+    const sum = f => all.filter(f).reduce((s, l) => s + (l.raw != null ? l.raw : l.amount), 0);
     const omissions = sum(l => l.action === 'Omission');
     const additions = sum(l => l.action === 'Addition');
     const abortiveTotal = sum(l => l.action === 'Abortive');
-    const net = round2(omissions + additions + abortiveTotal);
+    const riskPct = change.riskPct != null && change.riskPct !== '' ? num(change.riskPct) : num((pkg.contract || {}).riskPct);
+    const riskRaw = Math.max(additions, 0) * riskPct / 100, risk = round2(riskRaw);
+    const net = round2(omissions + additions + abortiveTotal + riskRaw);
     const priced = lines.filter(l => l.contractorAmount != null);
     const contractorTotal = priced.length ? round2(priced.reduce((s, l) => s + l.contractorAmount, 0)) : null;
-    return { lines: all, omissions, additions, abortiveTotal, net, contractorTotal, flags: all.flatMap(l => (l.flags || []).map(f => ({ ...f, line: l.desc }))) };
+    return { lines: all, omissions: round2(omissions), additions: round2(additions), abortiveTotal: round2(abortiveTotal), risk, riskPct, net, contractorTotal, flags: all.flatMap(l => (l.flags || []).map(f => ({ ...f, line: l.desc }))) };
   }
 
   const STAGE_ORDER = ['DCR', 'NoV', 'Notice of Claim', 'Cost Study', 'Damage Report', 'CR', 'VO'];
@@ -138,19 +148,19 @@
   function packageSummary(pkg) {
     const boqSum = (pkg.boq || []).reduce((s, b) => s + num(b.qty) * num(b.rate), 0);
     const contractSum = pkg.contractAmount != null ? num(pkg.contractAmount) : boqSum;
-    let approved = 0, pending = 0, omissions = 0, additions = 0, abortive = 0, contractorSubmitted = 0, unanalysed = 0;
+    let approved = 0, pending = 0, omissions = 0, additions = 0, abortive = 0, contractorSubmitted = 0, unanalysed = 0, risk = 0;
     const byDiscipline = {};
     (pkg.changes || []).forEach(ch => {
       const v = changeValue(ch, pkg);
       if (v.closed) return;
       if (v.approved != null) approved += v.approved; else pending += v.assessed;
       if (!v.analysed) { unanalysed += v.value; const d = ch.discipline || 'Not broken down'; byDiscipline[d] = round2((byDiscipline[d] || 0) + v.value); }
-      omissions += v.calc.omissions; additions += v.calc.additions; abortive += v.calc.abortiveTotal;
+      omissions += v.calc.omissions; additions += v.calc.additions; abortive += v.calc.abortiveTotal; risk += v.calc.risk;
       if (v.contractor != null) contractorSubmitted += v.contractor;
       v.calc.lines.forEach(l => { byDiscipline[l.discipline] = round2((byDiscipline[l.discipline] || 0) + l.amount); });
     });
     const cumulative = round2(approved + pending);
-    return { contractSum: round2(contractSum), approved: round2(approved), pending: round2(pending), cumulative, omissions: round2(omissions), additions: round2(additions), abortive: round2(abortive), unanalysed: round2(unanalysed), contractorSubmitted: round2(contractorSubmitted), byDiscipline, adjusted: round2(contractSum + cumulative), pct: contractSum ? cumulative / contractSum : 0 };
+    return { contractSum: round2(contractSum), approved: round2(approved), pending: round2(pending), cumulative, omissions: round2(omissions), additions: round2(additions), abortive: round2(abortive), risk: round2(risk), unanalysed: round2(unanalysed), contractorSubmitted: round2(contractorSubmitted), byDiscipline, adjusted: round2(contractSum + cumulative), pct: contractSum ? cumulative / contractSum : 0 };
   }
 
   function logRows(pkg) {
@@ -204,7 +214,7 @@
       const code = txt(row[pk.col.ref]);
       if (!/^(PKG|PK|DP)\s*#?\s*\d+/i.test(code)) return;
       const type = txt(row[pk.col.type]);
-      packages.push({ id: 'k' + (packages.length + 1), code, name: txt(row[pk.col.name]), contractor: txt(row[pk.col.contractor]), contractAmount: money2(row[pk.col.amount]), contract: { type: /lump/i.test(type) ? 'Lump Sum' : /re-?meas/i.test(type) ? 'Re-measured' : /design/i.test(type) ? 'Design & Build' : /cost/i.test(type) ? 'Cost Plus' : 'Other', typeOther: type, markupPct: 0, vatPct: 14, designFeesIncluded: 'No', iftIsIfc: 'Yes', geotech: 'Yes', pricingClause: '', paymentClause: '', notes: '' }, docs: [], boq: [], changes: [] });
+      packages.push({ id: 'k' + (packages.length + 1), code, name: txt(row[pk.col.name]), contractor: txt(row[pk.col.contractor]), contractAmount: money2(row[pk.col.amount]), contract: { type: /lump/i.test(type) ? 'Lump Sum' : /re-?meas/i.test(type) ? 'Re-measured' : /design/i.test(type) ? 'Design & Build' : /cost/i.test(type) ? 'Cost Plus' : 'Other', typeOther: type, markupPct: 0, riskPct: 10, vatPct: 14, designFeesIncluded: 'No', iftIsIfc: 'Yes', geotech: 'Yes', pricingClause: '', paymentClause: '', notes: '' }, docs: [], boq: [], changes: [], clauses: [], types: [], vos: [] });
     });
     const statusOf = s => /cancel|terminat/i.test(s) ? 'Cancelled' : /^pending/i.test(s) ? s : /approved|vo issued/i.test(s) ? 'Approved' : 'Draft';
     let rowsRead = 0; const unmatched = new Set();
@@ -222,7 +232,7 @@
       stages.push({ kind: 'CR', no: cr, date: isoDate(row[lg.col.crDate]), status: issued ? 'Approved' : status, amount: money2(row[lg.col.est]), approved: '', letterRef: '', deltaReason: stages.length ? 'Imported from cost report' : '' });
       if (vo || issued) stages.push({ kind: 'VO', no: vo, date: isoDate(row[lg.col.voDate]), status: issued ? 'Approved' : 'Draft', amount: typeof row[lg.col.aaa] === 'number' ? row[lg.col.aaa] : money2(row[lg.col.app]), approved: issued ? money2(row[lg.col.app]) : '', letterRef: '', deltaReason: 'Imported from cost report' });
       const n = k.changes.length + 1;
-      k.changes.push({ id: `CE-${k.code.replace(/\W/g, '')}-${String(n).padStart(3, '0')}`.toUpperCase(), title: txt(row[lg.col.title]), description: '', reason: dcr ? 'Design change' : /mail/i.test(reason) ? 'Client email' : 'Other', reasonRef: reason, discipline: '', imported: true, contractorSubmitted: typeof row[lg.col.sub] === 'number' ? row[lg.col.sub] : null, abortive: { status: 'Not applicable' }, si: txt(row[lg.col.si]) && !/^no$/i.test(txt(row[lg.col.si])) ? [{ no: txt(row[lg.col.si]), date: isoDate(row[lg.col.siDate]), ref: '' }] : [], lines: [], stages });
+      k.changes.push({ id: `CE-${k.code.replace(/\W/g, '')}-${String(n).padStart(3, '0')}`.toUpperCase(), title: txt(row[lg.col.title]), description: '', reason: dcr ? 'Design Change' : /mail/i.test(reason) ? 'Client Change' : 'Other', reasonRef: reason, discipline: '', imported: true, contractorSubmitted: typeof row[lg.col.sub] === 'number' ? row[lg.col.sub] : null, abortive: { status: 'Not applicable' }, si: txt(row[lg.col.si]) && !/^no$/i.test(txt(row[lg.col.si])) ? [{ no: txt(row[lg.col.si]), date: isoDate(row[lg.col.siDate]), ref: '' }] : [], lines: [], stages });
     });
     return { packages, rowsRead, unmatched: [...unmatched] };
   }
