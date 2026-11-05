@@ -40,6 +40,26 @@
     return { subject: pick('0037001F', '0037001E'), from: pick('0C1A001F', '0C1A001E'), body: pick('1000001F', '1000001E') };
   }
 
+  // Logos placed on a form: left, centre and right of the header.
+  function formLogos(XLSX, data) {
+    try {
+      const z = XLSX.CFB.read(new Uint8Array(data), { type: 'array' });
+      const read = n => { const e = XLSX.CFB.find(z, n); return e && e.content ? Uint8Array.from(e.content) : null; };
+      const txt = n => { const b = read(n); return b ? new TextDecoder().decode(b) : ''; };
+      const d = txt('/xl/drawings/drawing1.xml'), rels = txt('/xl/drawings/_rels/drawing1.xml.rels');
+      const out = {}, re = /<xdr:from><xdr:col>(\d+)<\/xdr:col>[\s\S]*?r:embed="(\w+)"/g; let m;
+      while ((m = re.exec(d))) {
+        const t = (rels.match(new RegExp('Id="' + m[2] + '"[^>]*Target="([^"]+)"')) || rels.match(new RegExp('Target="([^"]+)"[^>]*Id="' + m[2] + '"')) || [])[1];
+        if (!t) continue;
+        const b = read('/xl/' + t.replace('../', '')); if (!b) continue;
+        const col = Number(m[1]), slot = col < 3 ? 'left' : col < 7 ? 'center' : 'right';
+        let str = ''; b.forEach(x => { str += String.fromCharCode(x); });
+        out[slot] = btoa(str);
+      }
+      return out;
+    } catch (e) { return {}; }
+  }
+
   /* ---------- amounts in words ---------- */
   const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -282,6 +302,6 @@
     return { kind: 'unknown' };
   }
 
-  const api = { T, bookFrom, msgFrom, amountWords, wordsValue, findHeader, parseTable, parseBOQ, parseTakeoff, parseCR, similarity, similar, rank, overlap, matchAssessment, autoClauses, classify, crDigits, TOPICS: TOPICS.map(t => t[0]) };
+  const api = { T, bookFrom, msgFrom, formLogos, amountWords, wordsValue, findHeader, parseTable, parseBOQ, parseTakeoff, parseCR, similarity, similar, rank, overlap, matchAssessment, autoClauses, classify, crDigits, TOPICS: TOPICS.map(t => t[0]) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Reader = api;
 })(typeof window !== 'undefined' ? window : globalThis);
