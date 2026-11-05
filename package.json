@@ -1,0 +1,1 @@
+{"name":"varilink","version":"0.1.0","private":true,"scripts":{"build":"node build.js && cp dist/index.html index.html","test":"node --test test/*.test.js"},"dependencies":{"exceljs":"4.4.0"}}

@@ -1,0 +1,18 @@
+const {chromium}=require('playwright'),fs=require('fs'),path=require('path'),ExcelJS=require('exceljs');
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1280,height:900},acceptDownloads:true});const pg=await ctx.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));pg.on('console',m=>m.type()==='error'&&!/fonts|ERR_/.test(m.text())&&errs.push(m.text()));
+await pg.route('**/exceljs.min.js',r=>r.fulfill({path:'node_modules/exceljs/dist/exceljs.min.js',contentType:'text/javascript'}));
+await pg.route(/fonts\.g/,r=>r.abort());
+await pg.goto('file://'+path.resolve('dist/index.html'));
+const out=process.argv[2];
+await pg.screenshot({path:out+'/1project.png'});
+await pg.click('tr[data-open-package=k1]');await pg.waitForSelector('tr[data-open-change]');await pg.screenshot({path:out+'/2package.png'});
+await pg.click('tr[data-open-change="CE-PK01-003"]');await pg.waitForSelector('.titleblock');await pg.screenshot({path:out+'/3change.png',fullPage:true});
+console.log('net 003',await pg.textContent('.titleblock > div:last-child .tb-val'));
+const [dl]=await Promise.all([pg.waitForEvent('download'),pg.click('[data-act=exportVA]')]);const f=out+'/va.xlsx';await dl.saveAs(f);
+await pg.click('[data-tab=rates]');await pg.click('[data-tab=compare]');await pg.click('[data-tab=chain]');await pg.screenshot({path:out+'/4chain.png',fullPage:true});
+await pg.click('[data-act=convert]');await pg.fill('dialog [name=no]','CR-021');await pg.fill('dialog [name=reason]','First assessment after notice');await pg.click('dialog button[value=ok]');console.log('stages',await pg.locator('.stage').count());
+await pg.click('[data-tab=scope]');await pg.click('#ai-breakdown summary');await pg.click('[data-ai-sample=breakdown]');console.log('ai chip',await pg.locator('.chip.ai').count());
+await pg.goto('file://'+path.resolve('dist/index.html')+'#v-p1-k1-x-summary');await pg.reload();await pg.waitForSelector('.bars');await pg.screenshot({path:out+'/5summary.png'});console.log('state persisted stages',await pg.evaluate(()=>JSON.parse(localStorage.getItem('varilink-state-v2')).projects[0].packages[0].changes[2].stages.length));
+const m=await b.newPage({viewport:{width:390,height:800}});await m.route('**/exceljs.min.js',r=>r.fulfill({path:'node_modules/exceljs/dist/exceljs.min.js',contentType:'text/javascript'}));await m.route(/fonts\.g/,r=>r.abort());await m.goto('file://'+path.resolve('dist/index.html')+'#v-p1-k1-ce-pk01-003-scope');await m.waitForSelector('.titleblock');await m.screenshot({path:out+'/6mobile.png'});console.log('mobile overflow',await m.evaluate(()=>document.documentElement.scrollWidth-innerWidth));
+const wb=new ExcelJS.Workbook();await wb.xlsx.readFile(f);console.log(wb.worksheets.map(s=>s.name));const ws=wb.worksheets[0];ws.eachRow((r,i)=>{if(i>=13)console.log(i,r.values.slice(1,7).map(v=>v&&v.formula?`=${v.formula}→${v.result}`:v).join(' | ').slice(0,120))});
+console.log('errors',errs);await b.close()})();

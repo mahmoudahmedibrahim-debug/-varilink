@@ -1,0 +1,650 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>VariLink</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>/* Layout: drawing-sheet logic. A header strip, a title block for each change, and ledgers below. */
+:root{--paper:#f2f4f3;--sheet:#fff;--ink:#14212b;--muted:#566571;--line:#d3dbdc;--accent:#0a56a0;--accent-ink:#fff;--soft:#e5eef6;--omit:#b3261e;--omit-soft:#fbe9e7;--add:#17703c;--add-soft:#e3f3e8;--abort:#8a5a00;--abort-soft:#fbf0d9;
+--head:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;--body:"Source Sans 3","Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#10181e;--sheet:#172229;--ink:#e6edf0;--muted:#9fb0ba;--line:#2e3d46;--accent:#6db1f0;--accent-ink:#08253d;--soft:#1c3346;--omit:#ff9b92;--omit-soft:#40201e;--add:#77d39c;--add-soft:#173524;--abort:#eabf6a;--abort-soft:#3a2d12;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#10181e;--sheet:#172229;--ink:#e6edf0;--muted:#9fb0ba;--line:#2e3d46;--accent:#6db1f0;--accent-ink:#08253d;--soft:#1c3346;--omit:#ff9b92;--omit-soft:#40201e;--add:#77d39c;--add-soft:#173524;--abort:#eabf6a;--abort-soft:#3a2d12;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 15px/1.45 var(--body)}
+h1,h2,h3{font-family:var(--head);font-weight:600;line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:30px}h2{font-size:22px}h3{font-size:17px}
+p{margin:0}
+a{color:var(--accent)}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--sheet);border-bottom:2px solid var(--ink);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font:700 21px var(--head);letter-spacing:.02em;border:0;background:none;color:var(--ink);cursor:pointer;padding:0}
+.brand span{color:var(--accent)}
+.crumbs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--muted);flex:1;min-width:0}
+.crumbs button{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;padding:2px}
+.main{max-width:1240px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+.main>*{min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.stack{display:grid;gap:12px}.stack>*{min-width:0}
+.muted{color:var(--muted)}.small{font-size:13px}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{text-align:right;white-space:nowrap}
+.sample{font:600 12px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--abort);background:var(--abort-soft);padding:3px 8px}
+.sheet{background:var(--sheet);border:1px solid var(--line);padding:16px;min-width:0}
+.titleblock{background:var(--sheet);border:2px solid var(--ink);display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr))}
+.titleblock>div{padding:10px 12px;border-left:1px solid var(--line);min-width:0}
+.titleblock>div:first-child{border-left:0}
+.tb-label{font:600 11px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block}
+.tb-val{font:600 20px var(--head)}
+.tb-val.mono{font:600 16px var(--mono)}
+.omit{color:var(--omit)}.add{color:var(--add)}.abort{color:var(--abort)}
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--ink);overflow-x:auto}
+.tabs button{border:0;background:none;color:var(--muted);font:600 16px var(--head);padding:8px 14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+button.btn,label.btn,a.btn{text-decoration:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:600 14px var(--body);padding:7px 12px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.ghost{border-color:transparent;background:none;color:var(--accent);padding:4px 6px}
+button.danger{color:var(--omit)}
+summary{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);padding:6px 8px;width:100%;min-width:0}
+textarea{min-height:90px;resize:vertical}
+td input,td select{padding:4px 6px;background:transparent}
+input[type=checkbox]{width:auto}
+.field{display:grid;gap:3px}
+.field>span{font-size:13px;color:var(--muted);font-weight:600}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.grid>*{min-width:0}
+.scroll{overflow-x:auto;border:1px solid var(--line);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font:600 12px var(--body);letter-spacing:.03em;text-align:left;color:var(--muted);background:var(--paper);border-bottom:1px solid var(--ink);padding:7px 8px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+tr.band td{font:600 14px var(--head);background:var(--paper);letter-spacing:.03em}
+tr.total td{font-weight:700;border-top:1px solid var(--ink)}
+tbody tr.link{cursor:pointer}
+tbody tr.link:hover td{background:var(--soft)}
+.chip{display:inline-block;font:600 12px var(--body);padding:1px 7px;border:1px solid currentColor;white-space:nowrap}
+.chip.Omission{color:var(--omit)}.chip.Addition{color:var(--add)}.chip.Abortive{color:var(--abort)}
+.chip.ok{color:var(--add)}.chip.wait{color:var(--abort)}.chip.stop{color:var(--omit)}.chip.ai{color:var(--accent)}
+.chain{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:4px}
+.stage{flex:0 0 210px;border:1px solid var(--line);border-top:3px solid var(--accent);background:var(--sheet);padding:10px;display:grid;gap:6px}
+.link-delta{flex:0 0 96px;display:grid;place-content:center;text-align:center;font:500 12px var(--mono);color:var(--muted);padding:0 6px;border-block:1px dashed var(--line);align-self:center;min-height:44px}
+.alerts{display:grid;gap:6px}
+.alert{padding:7px 10px;border-left:3px solid var(--abort);background:var(--abort-soft);font-size:14px}
+.alert.error{border-color:var(--omit);background:var(--omit-soft)}
+.alert.good{border-color:var(--add);background:var(--add-soft)}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:120px minmax(0,1fr) 120px;gap:8px;align-items:center;font-size:14px}
+.bar i{display:block;height:12px;background:var(--accent)}
+.bar i.neg{background:var(--omit)}
+dialog{border:2px solid var(--ink);background:var(--sheet);color:var(--ink);padding:18px;width:min(640px,calc(100vw - 32px));max-height:86vh;overflow:auto}
+dialog::backdrop{background:rgb(10 20 30/.55)}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;z-index:30;max-width:calc(100vw - 32px)}
+.pre{font:12px/1.4 var(--mono);white-space:pre-wrap;background:var(--paper);border:1px solid var(--line);padding:8px;max-height:160px;overflow:auto}
+.route{display:grid;gap:8px;border:1px solid var(--line);padding:12px;min-width:0}
+@media (max-width:800px){.titleblock{grid-template-columns:repeat(2,minmax(0,1fr))}.titleblock>div:first-child{grid-column:1/-1}.titleblock>div{border-left:0;border-top:1px solid var(--line)}.titleblock>div:first-child{border-top:0}.bar{grid-template-columns:90px minmax(0,1fr) 100px}}
+@media (prefers-reduced-motion:no-preference){.tabs button{transition:background .12s}}
+</style></head><body><header class="top"><button class="brand" id="brand">Vari<span>Link</span></button><nav class="crumbs" id="crumbs" aria-label="Location"></nav></header>
+<main class="main" id="main"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>// VariLink calculation engine. Pure functions, no DOM and no AI.
+(function (root) {
+  const round2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+
+  // Lump Sum and Design & Build keep BOQ quantities on full-item replacement.
+  function measurementBasis(contractType) {
+    if (contractType === 'Lump Sum' || contractType === 'Design & Build') return 'lumpsum';
+    if (contractType === 'Re-measured') return 'remeasured';
+    return 'actual';
+  }
+
+  function findBoq(pkg, code) { return (pkg.boq || []).find(b => b.code === code) || null; }
+
+  function rateFor(line, pkg) {
+    const contract = pkg.contract || {};
+    const markup = num(contract.markupPct) / 100;
+    const src = line.rateSource;
+    if (src === 'BOQ' || src === 'Similar') {
+      const b = findBoq(pkg, line.rateRef || line.boqCode);
+      return { rate: b ? num(b.rate) : 0, basis: b ? `${src === 'BOQ' ? 'BOQ rate' : 'Similar item'} ${b.code}` : 'BOQ reference missing', direct: null };
+    }
+    if (src === 'Derived') {
+      const b = findBoq(pkg, line.rateRef);
+      const f = line.factor === '' || line.factor == null ? 1 : num(line.factor);
+      return { rate: b ? round2(num(b.rate) * f) : 0, basis: b ? `Derived from ${b.code} x ${f}, all-in${line.derivation ? ': ' + line.derivation : ''}` : 'BOQ reference missing', direct: null };
+    }
+    if (src === 'New') {
+      const direct = (line.breakdown || []).reduce((s, r) => s + num(r.qty) * num(r.rate), 0);
+      if (direct > 0) return { rate: round2(direct * (1 + markup)), basis: `New rate: direct cost ${round2(direct)} + OH&P ${contract.markupPct || 0}%`, direct: round2(direct) };
+      return { rate: num(line.rate), basis: line.quoteRef ? `Quotation ${line.quoteRef}` : 'New rate without build-up', direct: null };
+    }
+    return { rate: num(line.rate), basis: 'Manual rate', direct: null };
+  }
+
+  function computeLine(line, pkg) {
+    const basis = measurementBasis((pkg.contract || {}).type);
+    const boq = line.boqCode ? findBoq(pkg, line.boqCode) : null;
+    const flags = [];
+    let qty = 0, qtyBasis = '', rateInfo;
+
+    if (line.action === 'Omission') {
+      if (!boq) flags.push({ level: 'error', text: 'Omission needs a BOQ item.' });
+      if (line.scope === 'full') {
+        qty = boq ? num(boq.qty) : 0;
+        qtyBasis = 'BOQ quantity: full item omitted';
+      } else {
+        qty = num(line.takeoffQty);
+        qtyBasis = 'Actual take-off: part of item omitted';
+        if (boq && qty > num(boq.qty)) flags.push({ level: 'warn', text: `Omitted take-off ${qty} exceeds BOQ quantity ${num(boq.qty)}.` });
+      }
+      rateInfo = boq ? { rate: num(boq.rate), basis: `BOQ rate ${boq.code}`, direct: null } : { rate: 0, basis: '', direct: null };
+    } else {
+      const replaced = line.replacesCode ? findBoq(pkg, line.replacesCode) : null;
+      if (basis === 'lumpsum' && replaced) {
+        qty = num(replaced.qty);
+        qtyBasis = `BOQ quantity of ${replaced.code}: lump sum full replacement`;
+        if (line.unit && replaced.unit && line.unit !== replaced.unit) flags.push({ level: 'warn', text: `Unit ${line.unit} differs from replaced item unit ${replaced.unit}; the fixed quantity needs review.` });
+      } else {
+        qty = num(line.takeoffQty);
+        qtyBasis = 'Actual take-off from revised drawings';
+      }
+      rateInfo = rateFor(line, pkg);
+      if (!rateInfo.rate) flags.push({ level: 'error', text: 'Rate is missing.' });
+      if (line.rateSource === 'New' && !rateInfo.direct && !line.quoteRef) flags.push({ level: 'warn', text: 'New rate has no build-up or quotation.' });
+    }
+
+    if (!qty) flags.push({ level: 'error', text: 'Quantity is missing.' });
+    if (line.source === 'AI' && !line.verified) flags.push({ level: 'warn', text: 'AI line is not verified yet.' });
+
+    const sign = line.action === 'Omission' ? -1 : 1;
+    const rate = rateInfo.rate;
+    const amount = round2(sign * qty * rate);
+    const contractorAmount = line.contractorQty === '' || line.contractorQty == null || line.contractorRate === '' || line.contractorRate == null ? null : round2(sign * num(line.contractorQty) * num(line.contractorRate));
+    return { ...line, desc: line.desc || (boq ? boq.desc : ''), unit: line.unit || (boq ? boq.unit : ''), discipline: line.discipline || (boq ? boq.discipline : '') || 'General', qty, qtyBasis, rate, rateBasis: rateInfo.basis, direct: rateInfo.direct, sign, amount, contractorAmount, flags };
+  }
+
+  function computeChange(change, pkg) {
+    const lines = (change.lines || []).map(l => computeLine(l, pkg));
+    const abortive = [];
+    if (change.abortive && change.abortive.status === 'Yes') {
+      lines.filter(l => l.action === 'Omission' && num(l.executedQty) > 0).forEach(l => {
+        const q = num(l.executedQty);
+        abortive.push({ id: l.id + '-abortive', action: 'Abortive', desc: `Abortive work: ${l.desc}`, unit: l.unit, discipline: l.discipline, qty: q, qtyBasis: 'Executed quantity confirmed by the supervision consultant', rate: l.rate, rateBasis: l.rateBasis, sign: 1, amount: round2(q * l.rate), contractorAmount: null, flags: q > l.qty ? [{ level: 'warn', text: 'Executed quantity exceeds omitted quantity.' }] : [], boqCode: l.boqCode });
+      });
+    }
+    const all = lines.concat(abortive);
+    const sum = f => round2(all.filter(f).reduce((s, l) => s + l.amount, 0));
+    const omissions = sum(l => l.action === 'Omission');
+    const additions = sum(l => l.action === 'Addition');
+    const abortiveTotal = sum(l => l.action === 'Abortive');
+    const net = round2(omissions + additions + abortiveTotal);
+    const priced = lines.filter(l => l.contractorAmount != null);
+    const contractorTotal = priced.length ? round2(priced.reduce((s, l) => s + l.contractorAmount, 0)) : null;
+    return { lines: all, omissions, additions, abortiveTotal, net, contractorTotal, flags: all.flatMap(l => (l.flags || []).map(f => ({ ...f, line: l.desc }))) };
+  }
+
+  const STAGE_ORDER = ['DCR', 'NoV', 'Notice of Claim', 'Cost Study', 'Damage Report', 'CR', 'VO'];
+
+  function latestStage(change) { const s = change.stages || []; return s.length ? s[s.length - 1] : null; }
+
+  // Approved VO amount is final; otherwise the live AAA assessment is used.
+  function changeValue(change, pkg) {
+    const calc = computeChange(change, pkg);
+    const vo = (change.stages || []).find(s => s.kind === 'VO' && s.status === 'Approved' && s.approved !== '' && s.approved != null);
+    const closed = (change.stages || []).some(s => s.status === 'Cancelled');
+    const latest = latestStage(change);
+    const analysed = (change.lines || []).length > 0;
+    const assessed = analysed ? calc.net : latest ? num(latest.amount) : 0;
+    return { calc, approved: vo ? num(vo.approved) : null, closed, analysed, assessed, contractor: calc.contractorTotal != null ? calc.contractorTotal : change.contractorSubmitted != null ? num(change.contractorSubmitted) : null, value: closed ? 0 : vo ? num(vo.approved) : assessed };
+  }
+
+  function chainChecks(change) {
+    const out = [], stages = change.stages || [];
+    for (let i = 1; i < stages.length; i++) {
+      const delta = round2(num(stages[i].amount) - num(stages[i - 1].amount));
+      if (delta !== 0 && !stages[i].deltaReason) out.push({ level: 'error', text: `${stages[i].kind} ${stages[i].no || ''} moved by ${delta} from ${stages[i - 1].kind} without a reason.` });
+    }
+    return out;
+  }
+
+  // Cross-change check: total omitted across the package against BOQ quantity.
+  function boqOveromissions(pkg) {
+    const totals = {};
+    (pkg.changes || []).forEach(ch => {
+      if ((ch.stages || []).some(s => s.status === 'Cancelled')) return;
+      computeChange(ch, pkg).lines.filter(l => l.action === 'Omission' && l.boqCode).forEach(l => {
+        totals[l.boqCode] = totals[l.boqCode] || { qty: 0, refs: [] };
+        totals[l.boqCode].qty += l.qty; totals[l.boqCode].refs.push(ch.id);
+      });
+    });
+    return Object.entries(totals).map(([code, t]) => {
+      const b = findBoq(pkg, code);
+      return b && round2(t.qty) > num(b.qty) ? { level: 'warn', code, text: `${code}: ${round2(t.qty)} ${b.unit} omitted across ${[...new Set(t.refs)].join(', ')}, BOQ holds ${num(b.qty)}.` } : null;
+    }).filter(Boolean);
+  }
+
+  function packageSummary(pkg) {
+    const boqSum = (pkg.boq || []).reduce((s, b) => s + num(b.qty) * num(b.rate), 0);
+    const contractSum = pkg.contractAmount != null ? num(pkg.contractAmount) : boqSum;
+    let approved = 0, pending = 0, omissions = 0, additions = 0, abortive = 0, contractorSubmitted = 0, unanalysed = 0;
+    const byDiscipline = {};
+    (pkg.changes || []).forEach(ch => {
+      const v = changeValue(ch, pkg);
+      if (v.closed) return;
+      if (v.approved != null) approved += v.approved; else pending += v.assessed;
+      if (!v.analysed) { unanalysed += v.value; const d = ch.discipline || 'Not broken down'; byDiscipline[d] = round2((byDiscipline[d] || 0) + v.value); }
+      omissions += v.calc.omissions; additions += v.calc.additions; abortive += v.calc.abortiveTotal;
+      if (v.contractor != null) contractorSubmitted += v.contractor;
+      v.calc.lines.forEach(l => { byDiscipline[l.discipline] = round2((byDiscipline[l.discipline] || 0) + l.amount); });
+    });
+    const cumulative = round2(approved + pending);
+    return { contractSum: round2(contractSum), approved: round2(approved), pending: round2(pending), cumulative, omissions: round2(omissions), additions: round2(additions), abortive: round2(abortive), unanalysed: round2(unanalysed), contractorSubmitted: round2(contractorSubmitted), byDiscipline, adjusted: round2(contractSum + cumulative), pct: contractSum ? cumulative / contractSum : 0 };
+  }
+
+  function logRows(pkg) {
+    return (pkg.changes || []).map(ch => {
+      const v = changeValue(ch, pkg), s = k => (ch.stages || []).find(x => x.kind === k) || {};
+      const latest = latestStage(ch) || {};
+      return { id: ch.id, title: ch.title, reason: ch.reason, reasonRef: ch.reasonRef, dcr: s('DCR'), nov: s('NoV'), claim: s('Notice of Claim'), cr: s('CR'), vo: s('VO'), si: (ch.si || []), contractor: v.contractor, assessed: v.assessed, approved: v.approved, stage: latest.kind || '', status: latest.status || '', variance: v.contractor == null ? null : round2(v.contractor - v.assessed), chain: (ch.stages || []).map(x => `${x.kind} ${x.no || ''}`.trim()).join(' > ') };
+    });
+  }
+
+  // Compares an original / revised take-off table with the BOQ.
+  function compareTakeoff(rows, pkg, tolerancePct) {
+    const tol = (tolerancePct == null ? 5 : tolerancePct) / 100;
+    return rows.map(r => {
+      const b = findBoq(pkg, r.code), o = num(r.originalQty), n = num(r.revisedQty), delta = round2(n - o);
+      const flags = [];
+      if (r.code && !b) flags.push('Code is not in the BOQ');
+      if (b && o && num(b.qty) && Math.abs(o - num(b.qty)) / num(b.qty) > tol) flags.push(`Original take-off ${o} differs from BOQ ${num(b.qty)}`);
+      const action = delta < 0 ? 'Omission' : delta > 0 ? 'Addition' : null;
+      const scope = action === 'Omission' && b && n === 0 ? 'full' : 'partial';
+      return { ...r, boq: b, delta, action, scope, flags };
+    });
+  }
+
+  const isoDate = v => {
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    const m = String(v || '').trim().match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+  };
+  const txt = v => (v == null ? '' : String(v)).replace(/\s+/g, ' ').trim();
+  const money2 = v => (typeof v === 'number' ? v : 0);
+
+  function findHeader(sheets, tests) {
+    for (const sh of sheets) for (let r = 0; r < Math.min(sh.rows.length, 30); r++) {
+      const cells = (sh.rows[r] || []).map(txt);
+      const map = {}; let ok = true;
+      for (const [key, re] of Object.entries(tests)) { const i = cells.findIndex(c => re.test(c)); if (i < 0) ok = false; else map[key] = i; }
+      if (ok) return { sheet: sh, row: r, col: map };
+    }
+    return null;
+  }
+
+  // Reads a project cost report: the package summary and the change management log.
+  function parseCostReport(sheets) {
+    const pk = findHeader(sheets, { ref: /^Package Ref/i, name: /^Package Name/i, contractor: /^Contractor$/i, type: /^Type of Contract/i, amount: /^Accepted Contract Amount/i });
+    const lg = findHeader(sheets, { pkg: /^Package No/i, title: /^Change Description/i, reason: /^Reason for/i, cr: /^CR No/i, crDate: /^CR Creation Date/i, status: /^CR Status/i, est: /^CR Estimated Amount/i, vo: /^VO NO/i, voDate: /^Submission Date/i, aaa: /^AAA-Assessment/i, sub: /^Contractor Submission/i, app: /^Approved Amount/i, si: /^SWI\/CAI$/i, siDate: /^SWI\/CAI Date/i, comments: /^Comments/i });
+    if (!pk) throw new Error('No package summary found. It needs Package Ref., Package Name, Contractor, Type of Contract and Accepted Contract Amount columns.');
+    if (!lg) throw new Error('No change log found. It needs CR No, CR Status, VO No and Approved Amount columns.');
+    const packages = [];
+    pk.sheet.rows.slice(pk.row + 1).forEach(row => {
+      const code = txt(row[pk.col.ref]);
+      if (!/^(PKG|PK|DP)\s*#?\s*\d+/i.test(code)) return;
+      const type = txt(row[pk.col.type]);
+      packages.push({ id: 'k' + (packages.length + 1), code, name: txt(row[pk.col.name]), contractor: txt(row[pk.col.contractor]), contractAmount: money2(row[pk.col.amount]), contract: { type: /lump/i.test(type) ? 'Lump Sum' : /re-?meas/i.test(type) ? 'Re-measured' : /design/i.test(type) ? 'Design & Build' : /cost/i.test(type) ? 'Cost Plus' : 'Other', typeOther: type, markupPct: 0, vatPct: 14, designFeesIncluded: 'No', iftIsIfc: 'Yes', geotech: 'Yes', pricingClause: '', paymentClause: '', notes: '' }, docs: [], boq: [], changes: [] });
+    });
+    const statusOf = s => /cancel|terminat/i.test(s) ? 'Cancelled' : /^pending/i.test(s) ? s : /approved|vo issued/i.test(s) ? 'Approved' : 'Draft';
+    let rowsRead = 0; const unmatched = new Set();
+    lg.sheet.rows.slice(lg.row + 1).forEach(row => {
+      const cr = txt(row[lg.col.cr]), code = txt(row[lg.col.pkg]);
+      if (!/^CR/i.test(cr)) return;
+      const k = packages.find(p => p.code.replace(/\s/g, '').toUpperCase() === code.replace(/\s/g, '').toUpperCase());
+      if (!k) { unmatched.add(code); return; }
+      rowsRead++;
+      const raw = txt(row[lg.col.status]), status = statusOf(raw), reason = txt(row[lg.col.reason]);
+      const stages = [];
+      const dcr = reason.match(/DCR\s*-?\s*\d+/i);
+      if (dcr) stages.push({ kind: 'DCR', no: dcr[0], date: '', status: 'Approved', amount: money2(row[lg.col.est]), approved: '', letterRef: '', deltaReason: '' });
+      const vo = txt(row[lg.col.vo]), issued = /vo issued/i.test(raw);
+      stages.push({ kind: 'CR', no: cr, date: isoDate(row[lg.col.crDate]), status: issued ? 'Approved' : status, amount: money2(row[lg.col.est]), approved: '', letterRef: '', deltaReason: stages.length ? 'Imported from cost report' : '' });
+      if (vo || issued) stages.push({ kind: 'VO', no: vo, date: isoDate(row[lg.col.voDate]), status: issued ? 'Approved' : 'Draft', amount: typeof row[lg.col.aaa] === 'number' ? row[lg.col.aaa] : money2(row[lg.col.app]), approved: issued ? money2(row[lg.col.app]) : '', letterRef: '', deltaReason: 'Imported from cost report' });
+      const n = k.changes.length + 1;
+      k.changes.push({ id: `CE-${k.code.replace(/\W/g, '')}-${String(n).padStart(3, '0')}`.toUpperCase(), title: txt(row[lg.col.title]), description: '', reason: dcr ? 'Design change' : /mail/i.test(reason) ? 'Client email' : 'Other', reasonRef: reason, discipline: '', imported: true, contractorSubmitted: typeof row[lg.col.sub] === 'number' ? row[lg.col.sub] : null, abortive: { status: 'Not applicable' }, si: txt(row[lg.col.si]) && !/^no$/i.test(txt(row[lg.col.si])) ? [{ no: txt(row[lg.col.si]), date: isoDate(row[lg.col.siDate]), ref: '' }] : [], lines: [], stages });
+    });
+    return { packages, rowsRead, unmatched: [...unmatched] };
+  }
+
+  function parseAiJson(text) {
+    const t = String(text || '').trim(), s = t.indexOf('{'), e = t.lastIndexOf('}');
+    if (s < 0 || e < 0) throw new Error('No JSON found in the reply.');
+    return JSON.parse(t.slice(s, e + 1));
+  }
+
+  const api = { round2, num, measurementBasis, findBoq, rateFor, computeLine, computeChange, changeValue, chainChecks, boqOveromissions, packageSummary, logRows, latestStage, compareTakeoff, parseCostReport, parseAiJson, STAGE_ORDER };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Engine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script><script>// Fictional sample project. Names, quantities and rates are invented.
+window.sampleState = function () {
+  const E = window.Engine;
+  const boq1 = [
+    ['F-101','Ceramic floor tiles 60x60 including adhesive and grout','m2',4200,620,'Finishes'],
+    ['F-102','Ceramic wall tiles to wet areas','m2',3100,560,'Finishes'],
+    ['F-103','Emulsion paint to internal walls, three coats','m2',18500,95,'Finishes'],
+    ['C-201','Reinforced concrete to boundary wall footing','m3',320,5400,'Civil'],
+    ['C-202','Block work 200 mm to boundary wall','m2',2600,640,'Civil'],
+    ['C-203','Cement plaster to boundary wall','m2',5200,180,'Civil'],
+    ['M-301','UPVC drainage pipe 110 mm','m',1450,410,'Mechanical'],
+    ['E-401','LED downlight 12 W, supply and install','No',860,950,'Electrical'],
+    ['E-402','Power socket outlet, twin','No',1240,380,'Electrical']
+  ].map(([code,desc,unit,qty,rate,discipline])=>({code,desc,unit,qty,rate,discipline}));
+  const boq2 = [
+    ['R-101','Asphalt wearing course 50 mm','m2',12000,310,'Civil'],
+    ['R-102','Interlock pavers to walkways','m2',6400,540,'Civil'],
+    ['W-201','HDPE water main 160 mm','m',2300,1150,'Mechanical'],
+    ['E-301','Street light pole 6 m with LED head','No',140,28500,'Electrical']
+  ].map(([code,desc,unit,qty,rate,discipline])=>({code,desc,unit,qty,rate,discipline}));
+  const docs = names => names.map(n=>({category:n[0],name:n[1],rev:n[2]||'',date:n[3]||''}));
+  const k1 = { id:'k1', code:'PK-01', name:'Villas Zone A', contractor:'Cedar Build (fictional)',
+    contract:{type:'Lump Sum',typeOther:'',markupPct:30,designFeesIncluded:'No',iftIsIfc:'No',geotech:'Yes',vatPct:14,pricingClause:'Particular Conditions 13.3: BOQ rates first, then similar items, then fair rates with OH&P.',paymentClause:'Particular Conditions 14.3: monthly IPC, 5% retention.',notes:''},
+    docs:docs([['Contract','Contract agreement PK-01.pdf','0','2026-01-12'],['Particular Conditions','PC extract variations and payment.pdf','0','2026-01-12'],['Stamped BOQ','PK-01 stamped BOQ.xlsx','0','2026-01-12'],['IFT drawings','IFT architectural set.pdf','B','2025-11-02'],['IFC drawings','IFC architectural set.pdf','C','2026-03-20'],['Geotechnical report','Soil report Zone A.pdf','0','2025-08-15']]),
+    boq:boq1, changes:[] };
+  const k2 = { id:'k2', code:'PK-02', name:'Infrastructure Works', contractor:'Delta Civil (fictional)',
+    contract:{type:'Re-measured',typeOther:'',markupPct:30,designFeesIncluded:'No',iftIsIfc:'Yes',geotech:'Yes',vatPct:14,pricingClause:'Particular Conditions 13.3: quantities re-measured from executed work.',paymentClause:'Monthly IPC by measured quantities.',notes:''},
+    docs:docs([['Contract','Contract agreement PK-02.pdf','0','2026-02-02'],['Stamped BOQ','PK-02 stamped BOQ.xlsx','0','2026-02-02']]),
+    boq:boq2, changes:[] };
+
+  k1.changes.push({ id:'CE-PK01-001', title:'Clubhouse flooring upgrade from ceramic to porcelain', description:'Replace all ceramic floor tiles with 80x80 porcelain following the revised interior package.', reason:'Design change', reasonRef:'Client email 12-Mar-2026', discipline:'Finishes', abortive:{status:'No',by:'',ref:'',notes:''}, si:[{no:'SI-014',date:'2026-04-05',ref:'SI letter 014'}],
+    lines:[
+      {id:'l1',action:'Omission',scope:'full',boqCode:'F-101',takeoffQty:'',contractorQty:4200,contractorRate:620},
+      {id:'l2',action:'Addition',desc:'Porcelain floor tiles 80x80 including adhesive and grout',unit:'m2',discipline:'Finishes',replacesCode:'F-101',takeoffQty:4050,rateSource:'New',quoteRef:'Supplier quote Q-221',breakdown:[{cat:'Supply',item:'Porcelain tile',unit:'m2',qty:1.05,rate:560},{cat:'Supply',item:'Adhesive and grout',unit:'m2',qty:1,rate:95},{cat:'Install',item:'Installation',unit:'m2',qty:1,rate:130}],contractorQty:4200,contractorRate:1010}
+    ],
+    stages:[
+      {kind:'DCR',no:'DCR-007',date:'2026-03-15',status:'Approved',amount:2050000,approved:'',letterRef:'DCR letter 007',deltaReason:''},
+      {kind:'CR',no:'CR-012',date:'2026-03-29',status:'Approved',amount:2180000,approved:'',letterRef:'',deltaReason:'Tile size changed to 80x80 after the supplier quote.'},
+      {kind:'VO',no:'VO-005',date:'2026-05-10',status:'Approved',amount:2152080,approved:2100000,letterRef:'VO letter 005',deltaReason:'Rate build-up finalised against quote Q-221.'}
+    ]});
+  k1.changes.push({ id:'CE-PK01-002', title:'Wall tile height reduced in guest bathrooms', description:'Reduce wall tiling to 1.2 m in guest bathrooms and paint the area above.', reason:'Cost saving', reasonRef:'Cost saving workshop 02', discipline:'Finishes', abortive:{status:'No',by:'',ref:'',notes:''}, si:[],
+    lines:[
+      {id:'l3',action:'Omission',scope:'partial',boqCode:'F-102',takeoffQty:640,contractorQty:600,contractorRate:560},
+      {id:'l4',action:'Addition',desc:'Emulsion paint to tiled area removed',unit:'m2',discipline:'Finishes',takeoffQty:640,rateSource:'BOQ',rateRef:'F-103',contractorQty:640,contractorRate:110}
+    ],
+    stages:[{kind:'DCR',no:'DCR-009',date:'2026-07-02',status:'Approved',amount:-295000,approved:'',letterRef:'',deltaReason:''},{kind:'CR',no:'CR-016',date:'2026-07-20',status:'Pending Client',amount:-297600,approved:'',letterRef:'',deltaReason:'Measured from the revised bathroom drawings.'}]});
+  k1.changes.push({ id:'CE-PK01-003', title:'Boundary wall relocated along the north plot line', description:'Move 180 m of boundary wall 2 m inward. Part of the wall is already built and has to be demolished.', reason:'Contractor notice', reasonRef:'Notice letter COR-118', discipline:'Civil', abortive:{status:'Yes',by:'Supervision consultant',ref:'Site memo 044',notes:'Blockwork built before the instruction.'}, si:[{no:'SI-021',date:'2026-08-11',ref:'SI letter 021'}],
+    lines:[
+      {id:'l5',action:'Omission',scope:'partial',boqCode:'C-202',takeoffQty:540,executedQty:210,contractorQty:540,contractorRate:640},
+      {id:'l6',action:'Omission',scope:'partial',boqCode:'C-203',takeoffQty:1080,executedQty:0,contractorQty:1080,contractorRate:180},
+      {id:'l7',action:'Addition',desc:'Block work 200 mm to relocated wall',unit:'m2',discipline:'Civil',takeoffQty:556,rateSource:'BOQ',rateRef:'C-202',contractorQty:600,contractorRate:640},
+      {id:'l8',action:'Addition',desc:'Cement plaster to relocated wall',unit:'m2',discipline:'Civil',takeoffQty:1112,rateSource:'BOQ',rateRef:'C-203',contractorQty:1200,contractorRate:180},
+      {id:'l9',action:'Addition',desc:'Demolish executed block work and remove debris',unit:'m2',discipline:'Civil',takeoffQty:210,rateSource:'Derived',rateRef:'C-202',factor:0.3,derivation:'Demolition taken as 30% of the block work rate',contractorQty:210,contractorRate:320}
+    ],
+    stages:[{kind:'NoV',no:'NoV-006',date:'2026-08-04',status:'Pending AAA',amount:0,approved:'',letterRef:'COR-118',deltaReason:''}]});
+  k2.changes.push({ id:'CE-PK02-001', title:'Walkway finish changed from pavers to asphalt in Zone C', description:'Omit interlock pavers from Zone C walkways and use asphalt instead.', reason:'Value engineering', reasonRef:'VE proposal 03', discipline:'Civil', abortive:{status:'Not applicable',by:'',ref:'',notes:''}, si:[],
+    lines:[
+      {id:'l10',action:'Omission',scope:'partial',boqCode:'R-102',takeoffQty:2150,contractorQty:2150,contractorRate:540},
+      {id:'l11',action:'Addition',desc:'Asphalt wearing course to walkways',unit:'m2',discipline:'Civil',takeoffQty:2085,rateSource:'BOQ',rateRef:'R-101',replacesCode:'R-102',contractorQty:2150,contractorRate:310}
+    ],
+    stages:[{kind:'CR',no:'CR-003',date:'2026-06-14',status:'Pending Consultant',amount:-514650,approved:'',letterRef:'',deltaReason:''}]});
+  k2.changes.push({ id:'CE-PK02-002', title:'Street lighting omitted from service road', description:'Omit poles along the service road.', reason:'Client email', reasonRef:'Client email 03-Sep-2026', discipline:'Electrical', abortive:{status:'No',by:'',ref:'',notes:''}, si:[],
+    lines:[{id:'l12',action:'Omission',scope:'partial',boqCode:'E-301',takeoffQty:150}],
+    stages:[{kind:'DCR',no:'DCR-002',date:'2026-09-06',status:'Pending AAA',amount:-4275000,approved:'',letterRef:'',deltaReason:''}]});
+  return { projects:[{ id:'p1', name:'Palm Grove Residences', client:'Sample Developer', currency:'EGP', sample:true, packages:[k1,k2] }] };
+};
+</script><script>(function(){
+const E=window.Engine, $=s=>document.querySelector(s);
+const KEY='varilink-state-v2', AIKEY='varilink-ai-key';
+const CONTRACTS=['Lump Sum','Re-measured','Cost Plus','Design & Build','Other'];
+const REASONS=['Client email','Design change','Value engineering','Cost saving','RFI','Contractor notice','Site condition','Other'];
+const STATUSES=['Draft','Pending AAA','Pending Consultant','Pending Client','Approved','Cancelled'];
+const STAGES=['DCR','CR','NoV','VO','Cost Study','Damage Report','Notice of Claim'];
+const DOC_SLOTS=['Contract','Particular Conditions','Stamped BOQ','IFT drawings','IFC drawings','Geotechnical report','Specifications','Queries','Cut sheets'];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>n==null||n===''?'-':Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+const uid=p=>p+Math.random().toString(36).slice(2,8);
+function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return window.sampleState()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function getKey(){try{return localStorage.getItem(AIKEY)||''}catch(e){return ''}}
+function setKey(v){try{v?localStorage.setItem(AIKEY,v):localStorage.removeItem(AIKEY)}catch(e){}}
+let state=load(), view={p:null,k:null,c:null,tab:null}, takeoffRows=null, aiText={};
+function P(){return state.projects.find(x=>x.id===view.p)}
+function K(){const p=P();return p&&p.packages.find(x=>x.id===view.k)}
+function C(){const k=K();return k&&k.changes.find(x=>x.id===view.c)}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;d.setAttribute('role','status');document.body.append(d);setTimeout(()=>d.remove(),2600)}
+function go(v){view={p:v.p||null,k:v.k||null,c:v.c||null,tab:v.tab||null};takeoffRows=null;try{location.hash='v-'+[view.p,view.k,view.c&&view.c.toLowerCase(),view.tab].map(x=>x||'x').join('-')}catch(e){}render();window.scrollTo(0,0)}
+function fromHash(){const m=(location.hash||'').match(/^#v-(.+)$/);if(!m)return;const a=m[1].split('-');
+  // change ids hold hyphens: p-k-ce-pk01-001-tab
+  const p=a[0]==='x'?null:a[0],k=a[1]==='x'?null:a[1];let c=null,tab=a[a.length-1]==='x'?null:a[a.length-1];const mid=a.slice(2,-1).join('-');if(mid&&mid!=='x')c=mid.toUpperCase();view={p,k,c,tab}}
+
+/* ---------- views ---------- */
+function crumbs(){const p=P(),k=K(),c=C();const b=[];b.push(`<button data-go="home">Projects</button>`);if(p)b.push(`/ <button data-go="p">${esc(p.name)}</button>`);if(k)b.push(`/ <button data-go="k">${esc(k.code)}</button>`);if(c)b.push(`/ <span>${esc(c.id)}</span>`);return b.join(' ')}
+function render(){
+  $('#crumbs').innerHTML=crumbs();
+  const m=$('#main'),y=window.scrollY;
+  if(view.c&&C())m.innerHTML=changeView();else if(view.k&&K())m.innerHTML=packageView();else if(view.p&&P())m.innerHTML=projectView();else m.innerHTML=homeView();
+  window.scrollTo(0,y);
+}
+function homeView(){return `<div class="row between"><div class="stack" style="gap:4px"><h1>Variation and change management</h1><p class="muted">From the first DCR to the approved VO: one record, priced by your contract rules.</p></div>
+<div class="row"><button class="btn primary" data-act="newProject">New project</button><label class="btn">Import cost report<input type="file" accept=".xlsx" hidden data-act="importReport"></label><label class="btn">Open project file<input type="file" accept=".json" data-act="importJson" hidden></label><button class="btn" data-act="settings">AI settings</button></div></div>
+<div class="scroll"><table><thead><tr><th>Project</th><th>Client</th><th>Packages</th><th class="num">Contract sum</th><th class="num">Cumulative variations</th><th class="num">Open items</th><th></th></tr></thead><tbody>
+${state.projects.map(p=>{const s=p.packages.map(E.packageSummary);const open=p.packages.reduce((n,k)=>n+k.changes.filter(c=>{const l=E.latestStage(c);return l&&l.status!=='Approved'&&l.status!=='Cancelled'}).length,0);return `<tr class="link" data-open-project="${p.id}"><td><strong>${esc(p.name)}</strong> ${p.sample?'<span class="sample">Sample data</span>':''}</td><td>${esc(p.client)}</td><td>${p.packages.length}</td><td class="num">${money(s.reduce((a,x)=>a+x.contractSum,0))}</td><td class="num">${money(s.reduce((a,x)=>a+x.cumulative,0))}</td><td class="num">${open}</td><td><button class="ghost btn danger" data-del-project="${p.id}">Delete</button></td></tr>`}).join('')}
+</tbody></table></div>
+<p class="small muted">Everything you enter stays in this browser. Save a project file to back it up or pass it to a colleague. Use sample or anonymised data only.</p>`}
+function projectView(){const p=P(),sums=p.packages.map(k=>({k,s:E.packageSummary(k)}));const t=f=>sums.reduce((a,x)=>a+x.s[f],0);
+ return `<div class="row between"><div class="stack" style="gap:4px"><h1>${esc(p.name)}</h1><p class="muted">${esc(p.client)} · ${esc(p.currency)} ${p.sample?'<span class="sample">Sample data</span>':''}</p></div>
+ <div class="row"><button class="btn primary" data-act="newPackage">New package</button><button class="btn" data-act="exportProjectLog">Export variation summary</button><button class="btn" data-act="exportJson">Save project file</button></div></div>
+ <div class="titleblock"><div><span class="tb-label">Project</span><span class="tb-val">${esc(p.name)}</span></div><div><span class="tb-label">Contract sum</span><span class="tb-val mono">${money(t('contractSum'))}</span></div><div><span class="tb-label">Approved</span><span class="tb-val mono">${money(t('approved'))}</span></div><div><span class="tb-label">Pending</span><span class="tb-val mono">${money(t('pending'))}</span></div><div><span class="tb-label">Adjusted sum</span><span class="tb-val mono">${money(t('adjusted'))}</span></div></div>
+ <div class="scroll"><table><thead><tr><th>Package</th><th>Name</th><th>Contractor</th><th>Contract</th><th class="num">Contract sum</th><th class="num">Omissions</th><th class="num">Additions</th><th class="num">Abortive</th><th class="num">Cumulative</th><th class="num">% of contract</th></tr></thead><tbody>
+ ${sums.map(({k,s})=>`<tr class="link" data-open-package="${k.id}"><td><strong>${esc(k.code)}</strong></td><td>${esc(k.name)}</td><td>${esc(k.contractor)}</td><td>${esc(k.contract.type)}</td><td class="num">${money(s.contractSum)}</td><td class="num omit">${money(s.omissions)}</td><td class="num add">${money(s.additions)}</td><td class="num abort">${money(s.abortive)}</td><td class="num">${money(s.cumulative)}</td><td class="num">${(s.pct*100).toFixed(2)}%</td></tr>`).join('')}
+ </tbody></table></div>`}
+function packageView(){const k=K(),tab=view.tab||'changes',s=E.packageSummary(k);
+ const tabs=[['changes','Changes'],['contract','Contract and documents'],['boq','BOQ'],['log','Change log'],['summary','Summary']];
+ return `<div class="row between"><div class="stack" style="gap:4px"><h1>${esc(k.code)} ${esc(k.name)}</h1><p class="muted">${esc(k.contractor)} · ${esc(k.contract.type==='Other'?k.contract.typeOther||'Other':k.contract.type)}</p></div><div class="row"><button class="btn primary" data-act="newChange">New change</button><button class="btn" data-act="exportLog">Export change log</button></div></div>
+ <div class="titleblock"><div><span class="tb-label">Contract sum</span><span class="tb-val mono">${money(s.contractSum)}</span></div><div><span class="tb-label">Approved VOs</span><span class="tb-val mono">${money(s.approved)}</span></div><div><span class="tb-label">Pending assessments</span><span class="tb-val mono">${money(s.pending)}</span></div><div><span class="tb-label">Cumulative</span><span class="tb-val mono">${money(s.cumulative)}</span></div><div><span class="tb-label">Adjusted sum</span><span class="tb-val mono">${money(s.adjusted)}</span></div></div>
+ <div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${id===tab}" data-tab="${id}">${l}</button>`).join('')}</div>
+ ${({changes:changesTab,contract:contractTab,boq:boqTab,log:logTab,summary:summaryTab})[tab]()}`}
+function statusChip(st){const c=st==='Approved'?'ok':st==='Cancelled'?'stop':'wait';return `<span class="chip ${c}">${esc(st||'-')}</span>`}
+function changesTab(){const k=K();const over=E.boqOveromissions(k);
+ return `${alerts(over)}<div class="scroll"><table><thead><tr><th>Change</th><th>Title</th><th>Chain</th><th>Status</th><th class="num">AAA net</th><th class="num">Contractor</th><th class="num">Approved</th></tr></thead><tbody>
+ ${k.changes.map(c=>{const v=E.changeValue(c,k),l=E.latestStage(c)||{};return `<tr class="link" data-open-change="${c.id}"><td class="mono">${esc(c.id)}</td><td>${esc(c.title)}</td><td>${esc((c.stages||[]).map(s=>s.kind).join(' > '))}</td><td>${statusChip(l.status)}</td><td class="num">${money(v.assessed)}</td><td class="num">${money(v.contractor)}</td><td class="num">${money(v.approved)}</td></tr>`}).join('')||'<tr><td colspan="7" class="muted">No changes yet. Choose New change to raise the first one.</td></tr>'}
+ </tbody></table></div>`}
+function alerts(list){return list&&list.length?`<div class="alerts">${list.map(a=>`<div class="alert ${a.level==='error'?'error':''}">${esc(a.line?a.line+': ':'')}${esc(a.text)}</div>`).join('')}</div>`:''}
+function fld(label,bind,val,type='text',opts){const id='f-'+bind.replace(/\W/g,'-');const ctl=opts?`<select id="${id}" data-bind="${bind}">${opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select>`:type==='area'?`<textarea id="${id}" data-bind="${bind}">${esc(val)}</textarea>`:`<input id="${id}" type="${type}" data-bind="${bind}" value="${esc(val)}">`;return `<label class="field"><span>${label}</span>${ctl}</label>`}
+function contractTab(){const k=K(),c=k.contract;const yn=['Yes','No'];
+ return `<div class="sheet stack"><h2>Contract profile</h2><p class="small muted">Enter the pricing terms once. Quantities and new rates in this package follow them.</p>
+ <div class="grid">${fld('Package code','pkg.code',k.code)}${fld('Package name','pkg.name',k.name)}${fld('Contractor','pkg.contractor',k.contractor)}${fld('Contract type','c.type',c.type,'',CONTRACTS)}${c.type==='Other'?fld('Describe the contract','c.typeOther',c.typeOther):''}${fld('OH&P on new rates %','c.markupPct',c.markupPct,'number')}${fld('VAT %','c.vatPct',c.vatPct,'number')}${fld('Design fees included in rates','c.designFeesIncluded',c.designFeesIncluded,'',yn)}${fld('IFC same as IFT','c.iftIsIfc',c.iftIsIfc,'',yn)}${fld('Geotechnical report in the tender','c.geotech',c.geotech,'',yn)}</div>
+ <div class="grid">${fld('Variation pricing clause','c.pricingClause',c.pricingClause,'area')}${fld('Payment clause','c.paymentClause',c.paymentClause,'area')}${fld('Notes','c.notes',c.notes,'area')}</div></div>
+ ${aiPanel('contract','Read contract terms with AI','Send the variation, payment and fee clauses to AI and review the extracted terms here.')}
+ <div class="sheet stack"><h2>Package documents</h2><p class="small muted">Files are registered here by name and revision. They are not uploaded anywhere.</p><div class="scroll"><table><thead><tr><th>Document</th><th>File</th><th>Rev</th><th>Date</th><th></th></tr></thead><tbody>
+ ${DOC_SLOTS.map(slot=>{const list=k.docs.filter(d=>d.category===slot);return (list.length?list:[null]).map(d=>`<tr><td>${esc(slot)}</td>${d?`<td>${esc(d.name)}</td><td>${esc(d.rev)}</td><td>${esc(d.date)}</td><td><button class="ghost btn" data-del-doc="${esc(k.docs.indexOf(d))}">Remove</button></td>`:`<td class="muted">Not registered</td><td></td><td></td><td></td>`}</tr>`).join('')+`<tr><td></td><td colspan="4"><label class="btn">Add file<input type="file" hidden data-doc="${esc(slot)}"></label></td></tr>`}).join('')}
+ </tbody></table></div></div>`}
+function boqTab(){const k=K(),total=k.boq.reduce((a,b)=>a+E.num(b.qty)*E.num(b.rate),0);
+ return `<div class="row"><label class="btn">Import BOQ from Excel<input type="file" accept=".xlsx" hidden data-act="importBoq"></label><button class="btn" data-act="tplBoq">Download BOQ template</button><button class="btn" data-act="addBoq">Add item</button></div>
+ <div class="scroll"><table><thead><tr><th>Code</th><th style="min-width:280px">Description</th><th>Unit</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th><th>Discipline</th><th></th></tr></thead><tbody>
+ ${k.boq.map((b,i)=>`<tr><td><input aria-label="Code" data-bind="boq.${i}.code" value="${esc(b.code)}"></td><td><input aria-label="Description" data-bind="boq.${i}.desc" value="${esc(b.desc)}"></td><td><input aria-label="Unit" data-bind="boq.${i}.unit" value="${esc(b.unit)}" style="width:64px"></td><td><input aria-label="Quantity" class="num" type="number" data-bind="boq.${i}.qty" value="${esc(b.qty)}" style="width:100px"></td><td><input aria-label="Rate" class="num" type="number" data-bind="boq.${i}.rate" value="${esc(b.rate)}" style="width:100px"></td><td class="num">${money(E.num(b.qty)*E.num(b.rate))}</td><td><input aria-label="Discipline" data-bind="boq.${i}.discipline" value="${esc(b.discipline)}" style="width:110px"></td><td><button class="ghost btn" data-del-boq="${i}">Remove</button></td></tr>`).join('')}
+ <tr class="total"><td colspan="5">Total</td><td class="num">${money(total)}</td><td colspan="2"></td></tr></tbody></table></div>`}
+function logTab(){const k=K(),rows=E.logRows(k);const st=s=>s&&s.no?`${esc(s.no)}<br><span class="small muted">${esc(s.date)}</span>`:'-';
+ return `<div class="scroll"><table><thead><tr><th>Change</th><th style="min-width:240px">Title</th><th>Reason</th><th>DCR</th><th>Notice</th><th>CR</th><th>SI</th><th>VO</th><th>Status</th><th class="num">Contractor</th><th class="num">AAA assessed</th><th class="num">Approved</th><th class="num">Contractor less AAA</th></tr></thead><tbody>
+ ${rows.map(r=>`<tr class="link" data-open-change="${r.id}"><td class="mono">${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.reason)}<br><span class="small muted">${esc(r.reasonRef)}</span></td><td>${st(r.dcr)}</td><td>${st(r.nov.no?r.nov:r.claim)}</td><td>${st(r.cr)}</td><td>${r.si.length?r.si.map(st).join('<br>'):'-'}</td><td>${st(r.vo)}</td><td>${statusChip(r.status)}</td><td class="num">${money(r.contractor)}</td><td class="num">${money(r.assessed)}</td><td class="num">${money(r.approved)}</td><td class="num">${money(r.variance)}</td></tr>`).join('')}
+ </tbody></table></div>`}
+function summaryTab(){const k=K(),s=E.packageSummary(k),ent=Object.entries(s.byDiscipline),max=Math.max(1,...ent.map(e=>Math.abs(e[1])));
+ return `<div class="grid"><div class="sheet stack"><h2>Variation build-up</h2><table><tbody><tr><td>Omissions</td><td class="num omit">${money(s.omissions)}</td></tr><tr><td>Additions</td><td class="num add">${money(s.additions)}</td></tr><tr><td>Abortive work</td><td class="num abort">${money(s.abortive)}</td></tr><tr><td>Not broken down into items</td><td class="num">${money(s.unanalysed)}</td></tr><tr><td>Cumulative after approved VO values</td><td class="num">${money(s.cumulative)}</td></tr></tbody></table></div>
+ <div class="sheet stack"><h2>By discipline</h2><div class="bars">${ent.map(([d,v])=>`<div class="bar"><span>${esc(d)}</span><span><i class="${v<0?'neg':''}" style="width:${Math.abs(v)/max*100}%"></i></span><span class="num">${money(v)}</span></div>`).join('')}</div></div></div>`}
+
+function changeView(){const k=K(),c=C(),calc=E.computeChange(c,k),tab=view.tab||'scope';
+ const tabs=[['scope','Scope and quantities'],['rates','Rates'],['compare','Contractor vs AAA'],['chain','Chain and instructions']];
+ const checks=E.chainChecks(c).concat(calc.flags);
+ return `<div class="row between"><div class="stack" style="gap:4px;flex:1;min-width:260px"><span class="mono small muted">${esc(c.id)}</span><h1>${esc(c.title)}</h1></div><div class="row"><button class="btn primary" data-act="exportVA">Export assessment</button><button class="btn" data-act="convert">Move to next stage</button></div></div>
+ <div class="titleblock"><div><span class="tb-label">Contract rule</span><span class="tb-val">${esc(k.contract.type)}</span><span class="small muted"> ${esc(ruleText(k))}</span></div><div><span class="tb-label">Omissions</span><span class="tb-val mono omit">${money(calc.omissions)}</span></div><div><span class="tb-label">Additions</span><span class="tb-val mono add">${money(calc.additions)}</span></div><div><span class="tb-label">Abortive</span><span class="tb-val mono abort">${money(calc.abortiveTotal)}</span></div><div><span class="tb-label">Net variation</span><span class="tb-val mono">${money(calc.net)}</span></div></div>
+ ${c.imported&&!c.lines.length?'<div class="alert">Imported from the cost report at log value. Add omission and addition items to assess it.</div>':checks.length?alerts(checks):'<div class="alert good">All checks passed for this change.</div>'}
+ <div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${id===tab}" data-tab="${id}">${l}</button>`).join('')}</div>
+ ${({scope:scopeTab,rates:ratesTab,compare:compareTab,chain:chainTab})[tab](calc)}`}
+function ruleText(k){const b=E.measurementBasis(k.contract.type);return b==='lumpsum'?'Full replacement keeps BOQ quantities':b==='remeasured'?'New items use actual take-off':'Actual take-off'}
+function boqOptions(k,sel){return `<option value="">None</option>`+k.boq.map(b=>`<option value="${esc(b.code)}" ${b.code===sel?'selected':''}>${esc(b.code)} ${esc(b.desc.slice(0,38))}</option>`).join('')}
+function lineRow(l,raw,k,abort){const i=raw?K().changes.find(x=>x.id===view.c).lines.indexOf(raw):-1;
+ if(l.action==='Abortive')return `<tr><td><span class="chip Abortive">Abortive</span></td><td>${esc(l.desc)}</td><td>${esc(l.unit)}</td><td class="small muted">${esc(l.qtyBasis)}</td><td></td><td class="num">${money(l.qty)}</td><td class="num">${money(l.rate)}</td><td class="num abort">${money(l.amount)}</td><td></td></tr>`;
+ const ai=l.source==='AI'?`<br><label class="small"><input type="checkbox" data-bind="line.${i}.verified" ${l.verified?'checked':''}> <span class="chip ai">AI</span> verified</label>`:'';
+ const omit=l.action==='Omission';
+ return `<tr><td><span class="chip ${l.action}">${l.action}</span>${ai}</td>
+ <td style="min-width:230px">${omit?`<select aria-label="BOQ item" data-bind="line.${i}.boqCode">${boqOptions(k,l.boqCode)}</select><div class="small muted">${esc(l.desc)}</div>`:`<input aria-label="Description" data-bind="line.${i}.desc" value="${esc(raw.desc||'')}">${''}<div class="small muted row" style="margin-top:3px"><span>Replaces</span><select aria-label="Replaced BOQ item" data-bind="line.${i}.replacesCode" style="flex:1">${boqOptions(k,l.replacesCode)}</select></div>`}</td>
+ <td>${omit?esc(l.unit):`<input aria-label="Unit" data-bind="line.${i}.unit" value="${esc(raw.unit||'')}" style="width:56px">`}</td>
+ <td style="min-width:150px">${omit?`<select aria-label="Scope" data-bind="line.${i}.scope"><option value="full" ${l.scope==='full'?'selected':''}>Full item</option><option value="partial" ${l.scope==='partial'?'selected':''}>Part of item</option></select>`:''}<div class="small muted">${esc(l.qtyBasis)}</div></td>
+ <td><input aria-label="Take-off" class="num" type="number" data-bind="line.${i}.takeoffQty" value="${esc(raw.takeoffQty)}" style="width:92px">${omit&&abort?`<div class="small muted">Executed</div><input aria-label="Executed quantity" class="num" type="number" data-bind="line.${i}.executedQty" value="${esc(raw.executedQty||'')}" style="width:92px">`:''}</td>
+ <td class="num">${money(l.qty)}</td><td class="num">${money(l.rate)}</td><td class="num ${omit?'omit':'add'}">${money(l.amount)}</td><td><button class="ghost btn" data-del-line="${i}">Remove</button></td></tr>`}
+function scopeTab(calc){const k=K(),c=C(),abort=c.abortive&&c.abortive.status==='Yes';const raw=id=>c.lines.find(x=>x.id===id);
+ const band=(t,f)=>{const ls=calc.lines.filter(f);return ls.length?`<tr class="band"><td colspan="9">${t}</td></tr>`+ls.map(l=>lineRow(l,raw(l.id),k,abort)).join(''):''};
+ return `<div class="row"><button class="btn" data-add-line="Omission">Add omission</button><button class="btn" data-add-line="Addition">Add addition</button></div>
+ <div class="scroll"><table><thead><tr><th>Type</th><th>Item</th><th>Unit</th><th>Quantity rule</th><th class="num">Take-off</th><th class="num">Qty used</th><th class="num">Rate</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+ ${band('Omissions',l=>l.action==='Omission')}${band('Additions',l=>l.action==='Addition')}${band('Abortive work',l=>l.action==='Abortive')}
+ <tr class="total"><td colspan="7">Net variation</td><td class="num">${money(calc.net)}</td><td></td></tr></tbody></table></div>
+ <div class="sheet stack"><h2>Quantities</h2><p class="small muted">Pick any route. All three produce lines above that you can check before they count.</p>
+ <div class="grid"><div class="route"><h3>Enter or mark up yourself</h3><p class="small muted">Type the take-off in the table above.</p></div>
+ <div class="route"><h3>Upload take-off</h3><p class="small muted">Excel or CostX export with Code, Description, Unit, Original Qty, Revised Qty. The tool checks it against the BOQ.</p><div class="row"><label class="btn">Upload take-off<input type="file" accept=".xlsx" hidden data-act="importTakeoff"></label><button class="btn" data-act="tplTakeoff">Template</button></div></div>
+ <div class="route"><h3>AI take-off</h3><p class="small muted">AI reads old and new PDF drawings and proposes quantities, marked for your verification.</p></div></div>
+ ${takeoffRows?takeoffTable():''}</div>
+ ${aiPanel('takeoff','AI take-off from drawings','Attach the original and revised PDF drawings. Every quantity comes back unverified.',true)}
+ ${aiPanel('breakdown','Break down the change description','AI turns the general description into omission and addition items and lists items that may also be affected.')}
+ <div class="sheet stack"><h2>Abortive work</h2><div class="grid">${fld('Executed before the instruction, per consultant','ab.status',(c.abortive||{}).status||'Not applicable','',['Not applicable','No','Yes'])}${fld('Confirmed by','ab.by',(c.abortive||{}).by||'')}${fld('Reference','ab.ref',(c.abortive||{}).ref||'')}</div><p class="small muted">When this is Yes, enter the executed quantity on each omission. Add demolition as an addition.</p></div>`}
+function takeoffTable(){return `<div class="scroll"><table><thead><tr><th>Code</th><th>Description</th><th class="num">Original</th><th class="num">Revised</th><th class="num">Change</th><th>Result</th><th>Check</th></tr></thead><tbody>${takeoffRows.map(r=>`<tr><td>${esc(r.code)}</td><td>${esc(r.desc||(r.boq&&r.boq.desc)||'')}</td><td class="num">${money(r.originalQty)}</td><td class="num">${money(r.revisedQty)}</td><td class="num">${money(r.delta)}</td><td>${r.action?`<span class="chip ${r.action}">${r.action}</span>`:'No change'}</td><td class="small">${esc(r.flags.join('; '))||'OK'}</td></tr>`).join('')}</tbody></table></div><div class="row"><button class="btn primary" data-act="applyTakeoff">Create lines from this take-off</button></div>`}
+function ratesTab(calc){const k=K(),c=C();const adds=calc.lines.filter(l=>l.action==='Addition');
+ return `<p class="small muted">Rate order: BOQ item, similar item, derived from a BOQ item, new rate with build-up or quotation. New rates: supply, install, transport and labour are added up, then ${k.contract.markupPct||0}% OH&P from the contract profile is added. BOQ and derived rates are all-in, so no OH&P is added.</p>${adds.map(l=>{const raw=c.lines.find(x=>x.id===l.id),i=c.lines.indexOf(raw),src=raw.rateSource||'Manual';
+ return `<div class="sheet stack"><div class="row between"><h3>${esc(l.desc||'New item')}</h3><span class="mono">${money(l.rate)} / ${esc(l.unit)}</span></div><div class="grid"><label class="field"><span>Rate source</span><select data-bind="line.${i}.rateSource">${['BOQ','Similar','Derived','New','Manual'].map(o=>`<option ${o===src?'selected':''}>${o}</option>`).join('')}</select></label>
+ ${['BOQ','Similar','Derived'].includes(src)?`<label class="field"><span>BOQ reference</span><select data-bind="line.${i}.rateRef">${boqOptions(k,raw.rateRef)}</select></label>`:''}${src==='Derived'?`<label class="field"><span>Factor</span><input type="number" step="0.01" data-bind="line.${i}.factor" value="${esc(raw.factor)}"></label><label class="field"><span>Derivation (areas, lengths, reasoning)</span><input data-bind="line.${i}.derivation" value="${esc(raw.derivation)}"></label>`:''}${src==='Manual'||src==='New'?`<label class="field"><span>Rate if no build-up</span><input type="number" data-bind="line.${i}.rate" value="${esc(raw.rate)}"></label>`:''}${src==='New'?`<label class="field"><span>Quotation reference</span><input data-bind="line.${i}.quoteRef" value="${esc(raw.quoteRef)}"></label>`:''}</div>
+ <p class="small muted">${esc(l.rateBasis)}</p>
+ ${src==='New'?`<div class="scroll"><table><thead><tr><th>Type</th><th>Build-up item</th><th>Unit</th><th class="num">Qty per unit</th><th class="num">Rate</th><th class="num">Amount</th><th></th></tr></thead><tbody>${(raw.breakdown||[]).map((b,j)=>`<tr><td><select aria-label="Type" data-bind="bd.${i}.${j}.cat">${['Supply','Install','Transport','Labour','Other'].map(o=>`<option ${o===b.cat?'selected':''}>${o}</option>`).join('')}</select></td><td><input aria-label="Item" data-bind="bd.${i}.${j}.item" value="${esc(b.item)}"></td><td><input aria-label="Unit" data-bind="bd.${i}.${j}.unit" value="${esc(b.unit)}" style="width:60px"></td><td><input aria-label="Quantity" class="num" type="number" step="any" data-bind="bd.${i}.${j}.qty" value="${esc(b.qty)}" style="width:90px"></td><td><input aria-label="Rate" class="num" type="number" step="any" data-bind="bd.${i}.${j}.rate" value="${esc(b.rate)}" style="width:90px"></td><td class="num">${money(E.num(b.qty)*E.num(b.rate))}</td><td><button class="ghost btn" data-del-bd="${i}.${j}">Remove</button></td></tr>`).join('')}<tr class="total"><td colspan="5">Direct cost</td><td class="num">${money(l.direct)}</td><td></td></tr></tbody></table></div><div><button class="btn" data-add-bd="${i}">Add build-up item</button></div>`:''}</div>`}).join('')||'<p class="muted">No additions on this change yet.</p>'}`}
+function compareTab(calc){const c=C(),lines=calc.lines.filter(l=>l.action!=='Abortive');
+ return `<p class="small muted">Enter the contractor's submitted quantity and rate. The tool shows the difference line by line.</p><div class="scroll"><table><thead><tr><th>Type</th><th style="min-width:240px">Item</th><th class="num">Contractor qty</th><th class="num">Contractor rate</th><th class="num">Contractor amount</th><th class="num">AAA qty</th><th class="num">AAA rate</th><th class="num">AAA amount</th><th class="num">Difference</th></tr></thead><tbody>
+ ${lines.map(l=>{const raw=c.lines.find(x=>x.id===l.id),i=c.lines.indexOf(raw);return `<tr><td><span class="chip ${l.action}">${l.action}</span></td><td>${esc(l.desc)}</td><td><input aria-label="Contractor quantity" class="num" type="number" data-bind="line.${i}.contractorQty" value="${esc(raw.contractorQty)}" style="width:92px"></td><td><input aria-label="Contractor rate" class="num" type="number" data-bind="line.${i}.contractorRate" value="${esc(raw.contractorRate)}" style="width:92px"></td><td class="num">${money(l.contractorAmount)}</td><td class="num">${money(l.qty)}</td><td class="num">${money(l.rate)}</td><td class="num">${money(l.amount)}</td><td class="num">${l.contractorAmount==null?'-':money(E.round2(l.contractorAmount-l.amount))}</td></tr>`}).join('')}
+ <tr class="total"><td colspan="4">Total</td><td class="num">${money(calc.contractorTotal)}</td><td colspan="2"></td><td class="num">${money(E.round2(lines.reduce((a,l)=>a+l.amount,0)))}</td><td class="num">${calc.contractorTotal==null?'-':money(E.round2(calc.contractorTotal-lines.reduce((a,l)=>a+l.amount,0)))}</td></tr></tbody></table></div>`}
+function chainTab(){const c=C();const st=c.stages||[];
+ return `<div class="sheet stack"><h2>Stages</h2><p class="small muted">One record from start to finish. The title carries through every stage. Any price move needs a reason.</p><div class="chain">${st.map((s,i)=>{const d=i?E.round2(E.num(s.amount)-E.num(st[i-1].amount)):null;return `${i?`<div class="link-delta">${d>0?'+':''}${money(d)}</div>`:''}<div class="stage"><strong style="font-family:var(--head);font-size:18px">${esc(s.kind)}</strong>${fldS(i,'no','Number',s.no)}${fldS(i,'date','Date',s.date,'date')}<label class="field"><span>Status</span><select data-bind="st.${i}.status">${[...new Set(STATUSES.concat(s.status||[]))].map(o=>`<option ${o===s.status?'selected':''}>${esc(o)}</option>`).join('')}</select></label>${fldS(i,'amount','Stage amount',s.amount,'number')}${s.kind==='VO'?fldS(i,'approved','Approved amount',s.approved,'number'):''}${i?`<label class="field"><span>Reason for move</span><textarea style="min-height:60px" data-bind="st.${i}.deltaReason">${esc(s.deltaReason)}</textarea></label>`:''}</div>`}).join('')}</div></div>
+ <div class="sheet stack"><div class="row between"><h2>Site instructions</h2><button class="btn" data-act="addSi">Add instruction</button></div>${(c.si||[]).length?`<div class="scroll"><table><thead><tr><th>Number</th><th>Date</th><th>Reference</th><th></th></tr></thead><tbody>${c.si.map((s,i)=>`<tr><td><input aria-label="Number" data-bind="si.${i}.no" value="${esc(s.no)}"></td><td><input aria-label="Date" type="date" data-bind="si.${i}.date" value="${esc(s.date)}"></td><td><input aria-label="Reference" data-bind="si.${i}.ref" value="${esc(s.ref)}"></td><td><button class="ghost btn" data-del-si="${i}">Remove</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">No site instructions on this change.</p>'}</div>
+ <div class="sheet stack"><h2>Change details</h2><div class="grid">${fld('Title','ch.title',c.title)}${fld('Reason','ch.reason',c.reason,'',REASONS)}${fld('Reason reference','ch.reasonRef',c.reasonRef)}</div>${fld('General description','ch.description',c.description,'area')}</div>`}
+function fldS(i,f,l,v,t='text'){return `<label class="field"><span>${l}</span><input type="${t}" data-bind="st.${i}.${f}" value="${esc(v)}"></label>`}
+
+/* ---------- AI: free paste route and paid key route share one prompt ---------- */
+const AI_SCHEMAS={
+ breakdown:'{"lines":[{"action":"Omission|Addition","boqCode":"code or empty","desc":"item description","unit":"m2","scope":"full|partial","qty":0,"note":"why"}],"affected":["other items that may be affected"]}',
+ takeoff:'{"lines":[{"action":"Omission|Addition","boqCode":"code or empty","desc":"item description","unit":"m2","scope":"full|partial","qty":0,"note":"drawing and method used"}],"affected":[]}',
+ contract:'{"type":"Lump Sum|Re-measured|Cost Plus|Design & Build|Other","markupPct":0,"designFeesIncluded":"Yes|No","pricingClause":"clause number and text","paymentClause":"clause number and text"}'};
+function aiPrompt(kind){const k=K(),c=C();const boq=k.boq.map(b=>`${b.code} | ${b.desc} | ${b.unit} | ${b.qty} | ${b.rate}`).join('\n');
+ const head={breakdown:`You support a construction cost manager. Break this change into omitted and added BOQ items. Include hidden related items.\nChange title: ${c&&c.title}\nDescription: ${c&&c.description}\nContract type: ${k.contract.type}`,
+  takeoff:`You support a construction cost manager. Compare the attached original and revised drawings for this change and measure what was removed and added. State the drawing used for each quantity. If a quantity cannot be read, leave qty as 0 and say why.\nChange title: ${c&&c.title}\nDescription: ${c&&c.description}`,
+  contract:'Read the attached contract text. Extract the variation pricing terms, the combined overhead and profit percentage on new rates (markupPct), design fees and payment terms. Copy clause numbers exactly. Use 0 when a percentage is not stated.'}[kind];
+ return `${head}\n${kind==='contract'?'':`\nBOQ (code | description | unit | qty | rate):\n${boq}\n`}\nReply with JSON only, in this shape:\n${AI_SCHEMAS[kind]}`}
+function aiPanel(kind,title,hint,files){return `<details class="sheet" id="ai-${kind}"><summary><strong style="font:600 19px var(--head)">${title}</strong> <span class="small muted">${hint}</span></summary><div class="grid" style="margin-top:12px">
+ <div class="route"><h3>Free, 3 steps</h3><p class="small"><strong>1.</strong> Copy the request. <strong>2.</strong> Open a chat and paste it${files||kind==='contract'?', with your PDF attached':''}. <strong>3.</strong> Paste the reply below. It is added automatically.</p><div class="row"><button class="btn primary" data-ai-copy="${kind}">1. Copy request</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a><a class="btn" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a><a class="btn" href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a>${kind==='breakdown'?`<button class="btn" data-ai-sample="${kind}">Sample reply</button>`:''}</div><textarea id="ai-reply-${kind}" aria-label="AI reply" placeholder="3. Paste the AI reply here">${esc(aiText[kind]||'')}</textarea><div><button class="btn" data-ai-apply="${kind}">Add reply</button></div></div>
+ <div class="route"><h3>One click, with an API key</h3><p class="small muted">Runs inside the tool. Add the key once in AI settings. Costs cents per use.</p>${files?`<input type="file" id="ai-files-${kind}" accept=".pdf" multiple aria-label="PDF drawings">`:kind==='contract'?`<input type="file" id="ai-files-${kind}" accept=".pdf" aria-label="Contract PDF">`:''}<div class="row"><button class="btn" data-ai-run="${kind}">Run with AI</button><button class="btn ghost" data-act="settings">AI settings</button></div></div></div></details>`}
+async function aiRun(kind){const key=getKey(),host=window.claude&&await window.claude.use('sample').catch(()=>null);const prompt=aiPrompt(kind);const input=document.getElementById('ai-files-'+kind);const files=input?[...input.files]:[];
+ if(!key&&host&&!files.length){toast('Running AI');const r=await host(prompt,{modelTier:'quick'});document.getElementById('ai-reply-'+kind).value=r.text;aiText[kind]=r.text;toast('Reply received. Review it, then choose Apply reply.');return}
+ if(!key){toast('Add your API key in AI settings, or use the free route.');openSettings();return}
+ const content=[];for(const f of files){const b64=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(f)});content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}})}
+ content.push({type:'text',text:prompt});toast('Running AI');
+ const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:kind==='breakdown'?'claude-haiku-5-5':'claude-sonnet-5-5',max_tokens:4000,messages:[{role:'user',content}]})});
+ const j=await res.json();if(!res.ok)throw new Error(j.error&&j.error.message||'The AI request failed.');
+ const text=(j.content||[]).map(x=>x.text||'').join('');document.getElementById('ai-reply-'+kind).value=text;aiText[kind]=text;toast('Reply received. Review it, then choose Apply reply.')}
+function aiApply(kind){const t=document.getElementById('ai-reply-'+kind).value;let j;try{j=E.parseAiJson(t)}catch(e){toast('That reply is not valid JSON. Ask the AI to reply with JSON only.');return}
+ const k=K();
+ if(kind==='contract'){['type','markupPct','designFeesIncluded','pricingClause','paymentClause'].forEach(f=>{if(j[f]!==undefined&&j[f]!=='')k.contract[f]=j[f]});save();render();toast('Contract terms filled. Check them against the contract.');return}
+ const c=C();(j.lines||[]).forEach(l=>{const q=E.num(l.qty);c.lines.push({id:uid('l'),action:l.action==='Omission'?'Omission':'Addition',boqCode:l.action==='Omission'?l.boqCode||'':'',desc:l.desc||'',unit:l.unit||'',scope:l.scope==='full'?'full':'partial',takeoffQty:q||'',rateSource:'Manual',rate:'',source:'AI',verified:false,note:l.note||''})});
+ if((j.affected||[]).length)c.description=(c.description||'')+'\nPossibly affected: '+j.affected.join('; ');
+ aiText[kind]='';save();render();toast(`${(j.lines||[]).length} AI lines added. Verify each one.`)}
+const SAMPLE_REPLY=()=>JSON.stringify({lines:[{action:'Addition',desc:'Skirting to match the changed finish',unit:'m',scope:'partial',qty:0,note:'Sample reply for demonstration'}],affected:['Door thresholds at the changed areas']},null,1);
+
+/* ---------- Excel ---------- */
+const INK='FF14212B',BAND='FFE5EEF6';
+function hdr(ws,row){ws.getRow(row).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:INK}};c.alignment={vertical:'middle',wrapText:true}})}
+function nf(c){c.numFmt='#,##0.00;[Red]-#,##0.00'}
+async function saveBook(wb,name){const buf=await wb.xlsx.writeBuffer();await saveBlob(name,new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}
+async function saveBlob(name,blob){const dl=window.claude&&await window.claude.use('downloads').catch(()=>null);if(dl){try{await dl.save({filename:name,data:blob});toast('Saved '+name)}catch(e){if(e&&e.code!=='declined')toast('The file could not be saved.')}return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Saved '+name)}
+async function exportVA(){const p=P(),k=K(),c=C(),calc=E.computeChange(c,k),wb=new ExcelJS.Workbook();wb.creator='VariLink';
+ const ws=wb.addWorksheet('Variation Assessment',{views:[{showGridLines:false}]});ws.columns=[{width:12},{width:52},{width:8},{width:13},{width:14},{width:17},{width:44}];
+ ws.getCell('A1').value='VARIATION ASSESSMENT';ws.getCell('A1').font={bold:true,size:15};
+ const meta=[['Project',p.name],['Client',p.client],['Package',`${k.code} ${k.name}`],['Contractor',k.contractor],['Contract type',k.contract.type],['Change',c.id],['Title',c.title],['Reason',`${c.reason} (${c.reasonRef||'no reference'})`],['Chain',(c.stages||[]).map(s=>`${s.kind} ${s.no||''}`.trim()).join(' > ')],['Currency',p.currency]];
+ meta.forEach((m,i)=>{ws.getCell(2+i,1).value=m[0];ws.getCell(2+i,1).font={bold:true};ws.getCell(2+i,2).value=m[1]});
+ let r=13;const subtotal={};
+ const section=(title,action)=>{const ls=calc.lines.filter(l=>l.action===action);if(!ls.length)return;ws.getCell(r,1).value=title;ws.getRow(r).font={bold:true};ws.getCell(r,1).fill={type:'pattern',pattern:'solid',fgColor:{argb:BAND}};r++;
+  ws.getRow(r).values=['Item','Description','Unit','Quantity','Rate','Amount','Quantity basis'];hdr(ws,r);r++;const s=r;
+  ls.forEach(l=>{ws.getRow(r).values=[l.boqCode||'New',l.desc,l.unit,l.qty,l.rate];ws.getCell(r,6).value={formula:`${l.sign<0?'-':''}D${r}*E${r}`,result:l.amount};ws.getCell(r,7).value=l.qtyBasis;[4,5,6].forEach(x=>nf(ws.getCell(r,x)));ws.getCell(r,2).alignment={wrapText:true};r++});
+  ws.getCell(r,5).value='Sub-total';ws.getCell(r,5).font={bold:true};ws.getCell(r,6).value={formula:`SUM(F${s}:F${r-1})`,result:ls.reduce((a,l)=>a+l.amount,0)};ws.getCell(r,6).font={bold:true};nf(ws.getCell(r,6));subtotal[action]=r;r+=2};
+ section('A. Omissions','Omission');section('B. Additions','Addition');section('C. Abortive work','Abortive');
+ ws.getCell(r,5).value='Net variation';ws.getCell(r,5).font={bold:true};ws.getCell(r,6).value={formula:Object.values(subtotal).map(x=>'F'+x).join('+')||'0',result:calc.net};ws.getCell(r,6).font={bold:true};ws.getCell(r,6).border={top:{style:'thin'},bottom:{style:'double'}};nf(ws.getCell(r,6));r+=2;
+ ws.getCell(r,1).value='Draft for review. Excludes VAT.';ws.getCell(r,1).font={italic:true};
+ const ra=wb.addWorksheet('Rate Analysis');ra.columns=[{width:48},{width:14},{width:13},{width:15},{width:15},{width:44}];ra.getRow(1).values=['Addition item','Rate source','Reference','Qty per unit','Rate','Basis'];hdr(ra,1);let q=2;
+ calc.lines.filter(l=>l.action==='Addition').forEach(l=>{ra.getRow(q).values=[l.desc,l.rateSource||'Manual',l.rateRef||l.quoteRef||'','',l.rate,l.rateBasis];nf(ra.getCell(q,5));ra.getRow(q).font={bold:true};q++;
+  if(l.direct){const s=q;l.breakdown.forEach(b=>{ra.getRow(q).values=[`   ${b.cat||'Supply'}: ${b.item}`,b.unit,'',E.num(b.qty),E.num(b.rate)];ra.getCell(q,6).value={formula:`D${q}*E${q}`,result:E.round2(E.num(b.qty)*E.num(b.rate))};nf(ra.getCell(q,6));q++});
+   const mk=E.num(k.contract.markupPct);ra.getCell(q,1).value='   Direct cost';ra.getCell(q,6).value={formula:`SUM(F${s}:F${q-1})`,result:l.direct};nf(ra.getCell(q,6));q++;
+   ra.getCell(q,1).value=`   Rate with ${mk}% OH&P`;ra.getCell(q,6).value={formula:`ROUND(F${q-1}*(1+${mk}/100),2)`,result:l.rate};nf(ra.getCell(q,6));q++}q++});
+ const cm=wb.addWorksheet('Contractor vs AAA');cm.columns=[{width:11},{width:48},{width:12},{width:12},{width:16},{width:12},{width:12},{width:16},{width:16}];cm.getRow(1).values=['Type','Item','Contractor qty','Contractor rate','Contractor amount','AAA qty','AAA rate','AAA amount','Difference'];hdr(cm,1);let z=2;
+ calc.lines.filter(l=>l.action!=='Abortive').forEach(l=>{const rw=c.lines.find(x=>x.id===l.id),has=l.contractorAmount!=null;cm.getRow(z).values=[l.action,l.desc,has?E.num(rw.contractorQty):'',has?E.num(rw.contractorRate):'',has?{formula:`${l.sign<0?'-':''}C${z}*D${z}`,result:l.contractorAmount}:'',l.qty,l.rate,{formula:`${l.sign<0?'-':''}F${z}*G${z}`,result:l.amount},has?{formula:`E${z}-H${z}`,result:E.round2(l.contractorAmount-l.amount)}:''];[3,4,5,6,7,8,9].forEach(x=>nf(cm.getCell(z,x)));z++});
+ cm.getCell(z,2).value='Total';cm.getRow(z).font={bold:true};['E','H','I'].forEach(cl=>{const i=cl.charCodeAt(0)-64;let tot=0;for(let y=2;y<z;y++){const v=cm.getCell(y,i).value;tot+=v&&v.result||0}cm.getCell(z,i).value={formula:`SUM(${cl}2:${cl}${z-1})`,result:E.round2(tot)};nf(cm.getCell(z,i))});
+ const ch=wb.addWorksheet('Change Chain');ch.columns=[{width:15},{width:14},{width:13},{width:18},{width:16},{width:16},{width:50}];ch.getRow(1).values=['Stage','Number','Date','Status','Stage amount','Approved','Reason for move'];hdr(ch,1);(c.stages||[]).forEach((s,i)=>{ch.getRow(i+2).values=[s.kind,s.no,s.date,s.status,E.num(s.amount),s.approved===''?'':E.num(s.approved),s.deltaReason];nf(ch.getCell(i+2,5));nf(ch.getCell(i+2,6))});
+ await saveBook(wb,`${c.id} Variation Assessment.xlsx`)}
+function logSheet(wb,k,name){const ws=wb.addWorksheet(name.slice(0,31));ws.columns=[{width:15},{width:44},{width:18},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:18},{width:16},{width:16},{width:16},{width:16}];ws.getRow(1).values=['Change','Title','Reason','DCR','DCR date','Notice','CR','CR date','SI','VO','VO date','Status','Contractor','AAA assessed','Approved','Contractor less AAA'];hdr(ws,1);ws.views=[{state:'frozen',ySplit:1}];
+ E.logRows(k).forEach((r,i)=>{const n=i+2;ws.getRow(n).values=[r.id,r.title,r.reason,r.dcr.no||'',r.dcr.date||'',r.nov.no||r.claim.no||'',r.cr.no||'',r.cr.date||'',r.si.map(s=>s.no).join(', '),r.vo.no||'',r.vo.date||'',r.status,r.contractor==null?'':r.contractor,r.assessed,r.approved==null?'':r.approved,r.contractor==null?'':{formula:`M${n}-N${n}`,result:r.variance}];[13,14,15,16].forEach(c=>nf(ws.getCell(n,c)));ws.getCell(n,2).alignment={wrapText:true}});return ws}
+async function exportLog(){const wb=new ExcelJS.Workbook(),k=K();logSheet(wb,k,'Change Log');await saveBook(wb,`${k.code} Change Log.xlsx`)}
+async function exportProjectLog(){const wb=new ExcelJS.Workbook(),p=P();const ws=wb.addWorksheet('Variation Summary');ws.columns=[{width:12},{width:32},{width:18},{width:18},{width:18},{width:18},{width:18},{width:18}];ws.getRow(1).values=['Package','Name','Contract sum','Omissions','Additions','Abortive','Approved + pending','Adjusted sum'];hdr(ws,1);
+ p.packages.forEach((k,i)=>{const s=E.packageSummary(k),n=i+2;ws.getRow(n).values=[k.code,k.name,s.contractSum,s.omissions,s.additions,s.abortive,s.cumulative,{formula:`C${n}+G${n}`,result:s.adjusted}];[3,4,5,6,7,8].forEach(c=>nf(ws.getCell(n,c)))});
+ p.packages.forEach(k=>logSheet(wb,k,k.code+' Log'));await saveBook(wb,`${p.name} Variation Summary.xlsx`)}
+async function template(name,cols,rows){const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Sheet1');ws.getRow(1).values=cols;hdr(ws,1);ws.columns=cols.map(()=>({width:18}));(rows||[]).forEach((r,i)=>ws.getRow(i+2).values=r);await saveBook(wb,name)}
+async function readSheet(file){const wb=new ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());const ws=wb.worksheets[0];const val=c=>{const v=c.value;return v&&typeof v==='object'?(v.result!==undefined?v.result:v.text||(v.richText||[]).map(t=>t.text).join('')):v};
+ let head=null;const out=[];ws.eachRow(row=>{const cells=[];row.eachCell({includeEmpty:true},(c,i)=>cells[i]=val(c));if(!head){if(cells.some(c=>/code|item/i.test(String(c)))&&cells.some(c=>/qty|quantity/i.test(String(c))))head=cells.map(c=>String(c||'').trim().toLowerCase());return}const o={};head.forEach((h,i)=>{if(h)o[h]=cells[i]});out.push(o)});
+ if(!head)throw new Error('No header row found. Use the template columns.');return out}
+async function readAllSheets(file){const wb=new ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());const val=c=>{const v=c.value;if(v instanceof Date)return v;return v&&typeof v==='object'?(v.result!==undefined?v.result:v.text||(v.richText||[]).map(t=>t.text).join('')):v};return wb.worksheets.map(ws=>{const rows=[];ws.eachRow({includeEmpty:true},(row,n)=>{const c=[];for(let i=1;i<=ws.actualColumnCount+2&&i<=row.cellCount;i++)c[i-1]=val(row.getCell(i));rows[n-1]=c});return {name:ws.name,rows}})}
+const pick=(o,...names)=>{for(const n of names)for(const k of Object.keys(o))if(k.includes(n))return o[k];return ''};
+
+/* ---------- dialogs ---------- */
+function dialog(html,onSubmit){const d=document.createElement('dialog');d.innerHTML=`<form method="dialog" class="stack">${html}<div class="row"><button class="btn primary" value="ok">Save</button><button class="btn" value="cancel" formnovalidate>Cancel</button></div></form>`;document.body.append(d);d.addEventListener('close',()=>{if(d.returnValue==='ok'){const data=Object.fromEntries(new FormData(d.querySelector('form')));onSubmit(data)}d.remove()});d.showModal()}
+const dInput=(n,l,v='',req=true,t='text')=>`<label class="field"><span>${l}</span><input name="${n}" type="${t}" value="${esc(v)}" ${req?'required':''}></label>`;
+const dSel=(n,l,o,v)=>`<label class="field"><span>${l}</span><select name="${n}">${o.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
+function openSettings(){dialog(`<h2>AI settings</h2><p class="small muted">The free route needs no key. For the paid route, paste an API key. It stays in this browser and goes only to the AI provider. Costs depend on use: a breakdown is under one US cent; a drawing take-off costs more with page count.</p>${dInput('key','API key',getKey(),false,'password')}`,d=>{setKey(d.key.trim());toast(d.key?'API key saved in this browser.':'API key removed.')})}
+function newChange(){const k=K();dialog(`<h2>New change</h2>${dInput('title','Title')}${dSel('kind','Starts as',STAGES,'DCR')}${dInput('no','Reference number','',false)}${dSel('reason','Reason',REASONS,'Design change')}${dInput('reasonRef','Reason reference (letter, email or RFI)','',false)}<label class="field"><span>General description</span><textarea name="description"></textarea></label>`,d=>{const n=k.changes.length+1,id=`CE-${k.code.replace(/\W/g,'')}-${String(n).padStart(3,'0')}`.toUpperCase();k.changes.push({id,title:d.title,description:d.description,reason:d.reason,reasonRef:d.reasonRef,discipline:'',abortive:{status:'Not applicable'},si:[],lines:[],stages:[{kind:d.kind,no:d.no,date:new Date().toISOString().slice(0,10),status:'Draft',amount:0,approved:'',letterRef:'',deltaReason:''}]});save();go({p:view.p,k:view.k,c:id})})}
+function convertStage(){const k=K(),c=C(),net=E.computeChange(c,k).net,last=E.latestStage(c)||{},moved=E.round2(net-E.num(last.amount));const next=last.kind==='VO'?'VO':last.kind==='CR'?'VO':'CR';
+ dialog(`<h2>Move to next stage</h2><p>This keeps the title <strong>${esc(c.title)}</strong> and freezes today's assessment of <span class="mono">${money(net)}</span>.</p>${moved?`<div class="alert">This is ${money(moved)} different from ${esc(last.kind)} ${esc(last.no)}. Give the reason below.</div>`:''}${dSel('kind','New stage',STAGES,next)}${dInput('no','Number')}${dInput('date','Date',new Date().toISOString().slice(0,10),true,'date')}<label class="field"><span>Reason for move</span><textarea name="reason" ${moved?'required':''}></textarea></label>`,d=>{c.stages.push({kind:d.kind,no:d.no,date:d.date,status:'Draft',amount:net,approved:'',letterRef:'',deltaReason:d.reason});save();view.tab='chain';render();toast(`${d.kind} ${d.no} linked to ${c.id}`)})}
+
+/* ---------- events ---------- */
+function bind(path,v,el){const k=K(),c=C(),a=path.split('.');const nums=['takeoffQty','executedQty','contractorQty','contractorRate','rate','factor','qty','amount','approved','markupPct','vatPct'];const cast=f=>el.type==='checkbox'?el.checked:nums.includes(f)&&v!==''?Number(v):v;
+ if(a[0]==='pkg')k[a[1]]=v;else if(a[0]==='c')k.contract[a[1]]=cast(a[1]);else if(a[0]==='boq')k.boq[+a[1]][a[2]]=cast(a[2]);else if(a[0]==='line')c.lines[+a[1]][a[2]]=cast(a[2]);else if(a[0]==='bd')c.lines[+a[1]].breakdown[+a[2]][a[3]]=cast(a[3]);else if(a[0]==='st')c.stages[+a[1]][a[2]]=cast(a[2]);else if(a[0]==='si')c.si[+a[1]][a[2]]=v;else if(a[0]==='ch')c[a[1]]=v;else if(a[0]==='ab'){c.abortive=c.abortive||{};c.abortive[a[1]]=v}
+ save();render()}
+document.addEventListener('change',async e=>{const t=e.target;if(t.dataset.bind){bind(t.dataset.bind,t.value,t);return}
+ const f=t.files&&t.files[0];if(!f)return;
+ try{ if(t.dataset.doc){const k=K();k.docs.push({category:t.dataset.doc,name:f.name,rev:'',date:new Date(f.lastModified).toISOString().slice(0,10)});save();render();return}
+  if(t.dataset.act==='importJson'){const j=JSON.parse(await f.text());if(!j.id||!j.packages)throw new Error('This is not a VariLink project file.');const i=state.projects.findIndex(p=>p.id===j.id);i>=0?state.projects[i]=j:state.projects.push(j);save();go({p:j.id});return}
+  if(t.dataset.act==='importReport'){toast('Reading the cost report');const sheets=await readAllSheets(f);const r=E.parseCostReport(sheets);const id=uid('p');dialog(`<h2>Import cost report</h2><p>Found ${r.packages.length} packages and ${r.rowsRead} logged changes.${r.unmatched.length?` Not matched: ${esc(r.unmatched.join(', '))}.`:''} The data stays in this browser.</p>${dInput('name','Project name','')}${dInput('client','Client','')}${dInput('currency','Currency','EGP')}`,x=>{state.projects.push({id,name:x.name,client:x.client,currency:x.currency,packages:r.packages});save();go({p:id})});t.value='';return}
+  if(t.dataset.act==='importBoq'){const rows=await readSheet(f),k=K();const items=rows.map(o=>({code:String(pick(o,'code','item')||'').trim(),desc:String(pick(o,'desc')||''),unit:String(pick(o,'unit')||''),qty:E.num(pick(o,'qty','quantity')),rate:E.num(pick(o,'rate')),discipline:String(pick(o,'disc')||'General')})).filter(x=>x.code);k.boq=items;save();render();toast(`${items.length} BOQ items imported.`);return}
+  if(t.dataset.act==='importTakeoff'){const rows=await readSheet(f);takeoffRows=E.compareTakeoff(rows.map(o=>({code:String(pick(o,'code','item')||'').trim(),desc:String(pick(o,'desc')||''),unit:String(pick(o,'unit')||''),originalQty:E.num(pick(o,'original','old')),revisedQty:E.num(pick(o,'revised','new'))})),K());render();return}
+ }catch(err){toast(err.message||'The file could not be read.')}});
+document.addEventListener('click',async e=>{const b=e.target.closest('button,tr.link');if(!b)return;const d=b.dataset,k=K(),c=C();
+ try{
+ if(d.delProject){const pr=state.projects.find(x=>x.id===d.delProject);return dialog(`<h2>Delete project</h2><p>This removes <strong>${esc(pr.name)}</strong> and all its packages from this browser. Type DELETE to confirm.</p>${dInput('ok','Confirmation')}`,x=>{if(x.ok.trim().toUpperCase()!=='DELETE')return toast('Project kept.');state.projects=state.projects.filter(y=>y.id!==pr.id);save();go({});toast('Project deleted.')})}
+ if(d.go==='home')return go({});if(d.go==='p')return go({p:view.p});if(d.go==='k')return go({p:view.p,k:view.k});
+ if(d.openProject)return go({p:d.openProject});if(d.openPackage)return go({p:view.p,k:d.openPackage});if(d.openChange)return go({p:view.p,k:view.k,c:d.openChange});
+ if(d.tab){view.tab=d.tab;try{location.hash='v-'+[view.p,view.k,view.c&&view.c.toLowerCase(),view.tab].map(x=>x||'x').join('-')}catch(x){}return render()}
+ if(d.addLine){c.lines.push(d.addLine==='Omission'?{id:uid('l'),action:'Omission',scope:'partial',boqCode:'',takeoffQty:''}:{id:uid('l'),action:'Addition',desc:'',unit:'',takeoffQty:'',rateSource:'BOQ',rateRef:''});save();return render()}
+ if(d.delLine){c.lines.splice(+d.delLine,1);save();return render()}
+ if(d.delBoq){k.boq.splice(+d.delBoq,1);save();return render()}
+ if(d.delDoc){k.docs.splice(+d.delDoc,1);save();return render()}
+ if(d.delSi){c.si.splice(+d.delSi,1);save();return render()}
+ if(d.addBd){const l=c.lines[+d.addBd];l.breakdown=l.breakdown||[];l.breakdown.push({cat:'Supply',item:'',unit:'',qty:1,rate:0});save();return render()}
+ if(d.delBd){const [i,j]=d.delBd.split('.');c.lines[+i].breakdown.splice(+j,1);save();return render()}
+ if(d.aiCopy){const t=aiPrompt(d.aiCopy);try{await navigator.clipboard.writeText(t);toast('Request copied.')}catch(x){const ta=document.getElementById('ai-reply-'+d.aiCopy);ta.value=t;ta.select();toast('Copy this request from the box.')}return}
+ if(d.aiSample){document.getElementById('ai-reply-'+d.aiSample).value=SAMPLE_REPLY();return aiApply(d.aiSample)}
+ if(d.aiApply)return aiApply(d.aiApply);if(d.aiRun)return await aiRun(d.aiRun);
+ switch(d.act){
+  case 'settings':return openSettings();
+  case 'newProject':return dialog(`<h2>New project</h2>${dInput('name','Project name')}${dInput('client','Client')}${dInput('currency','Currency','EGP')}`,x=>{const id=uid('p');state.projects.push({id,name:x.name,client:x.client,currency:x.currency,packages:[]});save();go({p:id})});
+  case 'newPackage':return dialog(`<h2>New package</h2>${dInput('code','Package code','PK-')}${dInput('name','Package name')}${dInput('contractor','Contractor')}${dSel('type','Contract type',CONTRACTS,'Lump Sum')}`,x=>{const id=uid('k');P().packages.push({id,code:x.code,name:x.name,contractor:x.contractor,contract:{type:x.type,typeOther:'',markupPct:30,vatPct:14,designFeesIncluded:'No',iftIsIfc:'Yes',geotech:'Yes',pricingClause:'',paymentClause:'',notes:''},docs:[],boq:[],changes:[]});save();go({p:view.p,k:id,tab:'contract'})});
+  case 'newChange':return newChange();case 'convert':return convertStage();
+  case 'addBoq':k.boq.push({code:'',desc:'',unit:'',qty:0,rate:0,discipline:''});save();return render();
+  case 'addSi':c.si=c.si||[];c.si.push({no:'',date:'',ref:''});save();return render();
+  case 'exportVA':return await exportVA();case 'exportLog':return await exportLog();case 'exportProjectLog':return await exportProjectLog();
+  case 'exportJson':{const p=P();return await saveBlob(`${p.name}.varilink.json`,new Blob([JSON.stringify(p,null,1)],{type:'application/json'}))}
+  case 'tplBoq':return await template('BOQ template.xlsx',['Code','Description','Unit','Qty','Rate','Discipline'],[['F-101','Sample item','m2',100,250,'Finishes']]);
+  case 'tplTakeoff':return await template('Take-off template.xlsx',['Code','Description','Unit','Original Qty','Revised Qty'],[['F-101','Sample item','m2',100,80]]);
+  case 'applyTakeoff':{let n=0;takeoffRows.filter(r=>r.action).forEach(r=>{const q=Math.abs(r.delta);if(r.action==='Omission')c.lines.push({id:uid('l'),action:'Omission',scope:r.scope,boqCode:r.boq?r.code:'',takeoffQty:q});else c.lines.push({id:uid('l'),action:'Addition',desc:r.desc||(r.boq&&r.boq.desc)||'',unit:r.unit||(r.boq&&r.boq.unit)||'',takeoffQty:q,rateSource:r.boq?'BOQ':'Manual',rateRef:r.boq?r.code:'',discipline:r.boq&&r.boq.discipline});n++});takeoffRows=null;save();render();return toast(`${n} lines created.`)}
+ }}catch(err){toast(err.message||'That action failed.')}});
+window.addEventListener('hashchange',()=>{fromHash();render()});
+document.addEventListener('input',e=>{const m=(e.target.id||'').match(/^ai-reply-(.+)/);if(m)aiText[m[1]]=e.target.value});
+document.addEventListener('paste',e=>{const m=(e.target.id||'').match(/^ai-reply-(.+)/);if(m)setTimeout(()=>{if(/\{[\s\S]*\}/.test(e.target.value))aiApply(m[1])},0)});
+$('#brand').addEventListener('click',()=>go({}));
+fromHash();if(!view.p&&state.projects.length)view={p:state.projects[0].id,k:null,c:null,tab:null};render();
+})();
+</script></body></html>
