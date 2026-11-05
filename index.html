@@ -625,7 +625,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button,tr.
  if(d.delSi){c.si.splice(+d.delSi,1);save();return render()}
  if(d.addBd){const l=c.lines[+d.addBd];l.breakdown=l.breakdown||[];l.breakdown.push({cat:'Supply',item:'',unit:'',qty:1,rate:0});save();return render()}
  if(d.delBd){const [i,j]=d.delBd.split('.');c.lines[+i].breakdown.splice(+j,1);save();return render()}
- if(d.aiCopy){const t=aiPrompt(d.aiCopy);try{await navigator.clipboard.writeText(t);toast('Request copied.')}catch(x){const ta=document.getElementById('ai-reply-'+d.aiCopy);ta.value=t;ta.select();toast('Copy this request from the box.')}return}
+ if(d.aiCopy){const t=aiPrompt(d.aiCopy);try{await navigator.clipboard.writeText(t);b.textContent='Copied. Now paste it in the chat';toast('Request copied.')}catch(x){const ta=document.getElementById('ai-reply-'+d.aiCopy);ta.value=t;ta.select();toast('Copy this request from the box.')}return}
  if(d.aiSample){document.getElementById('ai-reply-'+d.aiSample).value=SAMPLE_REPLY();return aiApply(d.aiSample)}
  if(d.aiApply)return aiApply(d.aiApply);if(d.aiRun)return await aiRun(d.aiRun);
  switch(d.act){
